@@ -10,15 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { 
-    Plus, 
-    Trash2, 
-    Edit, 
-    Save, 
-    X, 
-    Newspaper, 
-    Star, 
-    Cake, 
+import {
+    Plus,
+    Trash2,
+    Edit,
+    Save,
+    X,
+    Newspaper,
+    Star,
+    Cake,
     Heart,
     ArrowLeft,
     Settings,
@@ -29,8 +29,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
 // Credenciais de acesso
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'premium2025';
+
 
 export default function Admin() {
     const queryClient = useQueryClient();
@@ -41,14 +40,32 @@ export default function Admin() {
     const [editingNoticia, setEditingNoticia] = useState(null);
     const [editingCard, setEditingCard] = useState(null);
     const [newNoticia, setNewNoticia] = useState({ titulo: '', resumo: '', conteudo: '', imagem_url: '', data_publicacao: '', ativo: true });
-        const [newCard, setNewCard] = useState({ tipo: 'funcionario_destaque', titulo: '', descricao: '', imagem_url: '', setor: '', nome_funcionario: '', mes_referencia: '', cor_destaque: '', ativo: true, ordem: 0 });
+    const [newCard, setNewCard] = useState({ tipo: 'funcionario_destaque', titulo: '', descricao: '', imagem_url: '', setor: '', nome_funcionario: '', mes_referencia: '', cor_destaque: '', ativo: true, ordem: 0 });
     const [accessCount, setAccessCount] = useState(0);
+    useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const res = await fetch(
+                    "http://localhost:8081/users/test/administrator",
+                    { credentials: "include" }
+                );
+                if (res.ok) {
+                    setIsAuthenticated(true);
+                }
+            } catch {
+                setIsAuthenticated(false);
+            }
+        };
+
+        checkSession();
+    }, []);
 
     useEffect(() => {
         const count = localStorage.getItem('adminAccessCount') || 0;
         const newCount = parseInt(count) + 1;
         setAccessCount(newCount);
         localStorage.setItem('adminAccessCount', newCount.toString());
+
     }, []);
 
     // Queries - MUST be before any conditional returns
@@ -124,15 +141,48 @@ export default function Admin() {
         campanha: Heart,
     };
 
-    const handleLogin = (e) => {
-        e.preventDefault();
-        if (loginUser === ADMIN_USER && loginPass === ADMIN_PASS) {
-            setIsAuthenticated(true);
-            setLoginError('');
-        } else {
-            setLoginError('Usuário ou senha incorretos');
-        }
+  const handleLogin = async (e) => {
+  e.preventDefault();
+  setLoginError("");
+
+  try {
+    // 1️⃣ LOGIN → gera cookie JWT
+    const loginRes = await fetch("http://localhost:8081/users/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        email: loginUser,
+        password: loginPass,
+      }),
+    });
+
+    if (!loginRes.ok) {
+      throw new Error("Usuário ou senha inválidos");
+    }
+
+   
+
+    // 3️⃣ OK → libera painel
+    setIsAuthenticated(true);
+
+  } catch (err) {
+    setLoginError(err.message || "Erro ao autenticar");
+  }
+};
+
+
+    const handleLogout = async () => {
+        await fetch("http://localhost:8081/users/logout", {
+            method: "POST",
+            credentials: "include",
+        });
+        setIsAuthenticated(false);
     };
+
+
 
     // Tela de Login
     if (!isAuthenticated) {
@@ -155,7 +205,7 @@ export default function Admin() {
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div>
                                 <Label className="text-white/70">Usuário</Label>
-                                <Input 
+                                <Input
                                     value={loginUser}
                                     onChange={(e) => setLoginUser(e.target.value)}
                                     className="bg-white/5 border-white/10 text-white"
@@ -164,7 +214,7 @@ export default function Admin() {
                             </div>
                             <div>
                                 <Label className="text-white/70">Senha</Label>
-                                <Input 
+                                <Input
                                     type="password"
                                     value={loginPass}
                                     onChange={(e) => setLoginPass(e.target.value)}
@@ -175,7 +225,7 @@ export default function Admin() {
                             {loginError && (
                                 <p className="text-red-500 text-sm text-center">{loginError}</p>
                             )}
-                            <Button 
+                            <Button
                                 type="submit"
                                 className="w-full bg-green-500 hover:bg-green-600 text-black font-semibold"
                             >
@@ -184,7 +234,7 @@ export default function Admin() {
                         </form>
 
                         <div className="mt-6 text-center">
-                            <Link 
+                            <Link
                                 to={createPageUrl('Home')}
                                 className="text-white/50 hover:text-white text-sm flex items-center justify-center gap-2"
                             >
@@ -204,7 +254,7 @@ export default function Admin() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                        <Link 
+                        <Link
                             to={createPageUrl('Home')}
                             className="p-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
                         >
@@ -220,13 +270,14 @@ export default function Admin() {
                         </div>
                     </div>
                     <Button
-                        onClick={() => setIsAuthenticated(false)}
+                        onClick={handleLogout}
                         variant="outline"
                         className="border-white/10 text-white/70 hover:text-white hover:bg-white/5"
                     >
                         <LogOut className="w-4 h-4 mr-2" />
                         Sair
                     </Button>
+
                 </div>
 
                 {/* Tabs */}
@@ -256,41 +307,41 @@ export default function Admin() {
                                 <CardContent className="space-y-4">
                                     <div>
                                         <Label className="text-white/70">Título</Label>
-                                        <Input 
+                                        <Input
                                             value={newNoticia.titulo}
-                                            onChange={(e) => setNewNoticia({...newNoticia, titulo: e.target.value})}
+                                            onChange={(e) => setNewNoticia({ ...newNoticia, titulo: e.target.value })}
                                             className="bg-white/5 border-white/10 text-white"
                                             placeholder="Título da notícia"
                                         />
                                     </div>
                                     <div>
                                         <Label className="text-white/70">Resumo</Label>
-                                        <Textarea 
+                                        <Textarea
                                             value={newNoticia.resumo}
-                                            onChange={(e) => setNewNoticia({...newNoticia, resumo: e.target.value})}
+                                            onChange={(e) => setNewNoticia({ ...newNoticia, resumo: e.target.value })}
                                             className="bg-white/5 border-white/10 text-white"
                                             placeholder="Resumo breve da notícia"
                                         />
                                     </div>
                                     <div>
                                         <Label className="text-white/70">URL da Imagem</Label>
-                                        <Input 
+                                        <Input
                                             value={newNoticia.imagem_url}
-                                            onChange={(e) => setNewNoticia({...newNoticia, imagem_url: e.target.value})}
+                                            onChange={(e) => setNewNoticia({ ...newNoticia, imagem_url: e.target.value })}
                                             className="bg-white/5 border-white/10 text-white"
                                             placeholder="https://..."
                                         />
                                     </div>
                                     <div>
                                         <Label className="text-white/70">Data de Publicação</Label>
-                                        <Input 
+                                        <Input
                                             type="date"
                                             value={newNoticia.data_publicacao}
-                                            onChange={(e) => setNewNoticia({...newNoticia, data_publicacao: e.target.value})}
+                                            onChange={(e) => setNewNoticia({ ...newNoticia, data_publicacao: e.target.value })}
                                             className="bg-white/5 border-white/10 text-white"
                                         />
                                     </div>
-                                    <Button 
+                                    <Button
                                         onClick={() => createNoticiaMutation.mutate(newNoticia)}
                                         disabled={!newNoticia.titulo || !newNoticia.resumo}
                                         className="w-full bg-green-500 hover:bg-green-600 text-black"
@@ -309,18 +360,18 @@ export default function Admin() {
                                         <CardContent className="p-4">
                                             {editingNoticia?.id === noticia.id ? (
                                                 <div className="space-y-3">
-                                                    <Input 
+                                                    <Input
                                                         value={editingNoticia.titulo}
-                                                        onChange={(e) => setEditingNoticia({...editingNoticia, titulo: e.target.value})}
+                                                        onChange={(e) => setEditingNoticia({ ...editingNoticia, titulo: e.target.value })}
                                                         className="bg-white/5 border-white/10 text-white"
                                                     />
-                                                    <Textarea 
+                                                    <Textarea
                                                         value={editingNoticia.resumo}
-                                                        onChange={(e) => setEditingNoticia({...editingNoticia, resumo: e.target.value})}
+                                                        onChange={(e) => setEditingNoticia({ ...editingNoticia, resumo: e.target.value })}
                                                         className="bg-white/5 border-white/10 text-white"
                                                     />
                                                     <div className="flex gap-2">
-                                                        <Button 
+                                                        <Button
                                                             onClick={() => updateNoticiaMutation.mutate({ id: noticia.id, data: editingNoticia })}
                                                             className="bg-green-500 hover:bg-green-600 text-black"
                                                             size="sm"
@@ -328,7 +379,7 @@ export default function Admin() {
                                                             <Save className="w-4 h-4 mr-1" />
                                                             Salvar
                                                         </Button>
-                                                        <Button 
+                                                        <Button
                                                             onClick={() => setEditingNoticia(null)}
                                                             variant="outline"
                                                             size="sm"
@@ -351,7 +402,7 @@ export default function Admin() {
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-2 ml-4">
-                                                        <Button 
+                                                        <Button
                                                             onClick={() => setEditingNoticia(noticia)}
                                                             variant="ghost"
                                                             size="icon"
@@ -359,7 +410,7 @@ export default function Admin() {
                                                         >
                                                             <Edit className="w-4 h-4" />
                                                         </Button>
-                                                        <Button 
+                                                        <Button
                                                             onClick={() => deleteNoticiaMutation.mutate(noticia.id)}
                                                             variant="ghost"
                                                             size="icon"
@@ -394,9 +445,9 @@ export default function Admin() {
                                 <CardContent className="space-y-4">
                                     <div>
                                         <Label className="text-white/70">Tipo</Label>
-                                        <Select 
+                                        <Select
                                             value={newCard.tipo}
-                                            onValueChange={(value) => setNewCard({...newCard, tipo: value})}
+                                            onValueChange={(value) => setNewCard({ ...newCard, tipo: value })}
                                         >
                                             <SelectTrigger className="bg-white/5 border-white/10 text-white">
                                                 <SelectValue />
@@ -410,9 +461,9 @@ export default function Admin() {
                                     </div>
                                     <div>
                                         <Label className="text-white/70">Título</Label>
-                                        <Input 
+                                        <Input
                                             value={newCard.titulo}
-                                            onChange={(e) => setNewCard({...newCard, titulo: e.target.value})}
+                                            onChange={(e) => setNewCard({ ...newCard, titulo: e.target.value })}
                                             className="bg-white/5 border-white/10 text-white"
                                             placeholder="Ex: Destaque de Janeiro, Setembro Amarelo..."
                                         />
@@ -421,17 +472,17 @@ export default function Admin() {
                                         <>
                                             <div>
                                                 <Label className="text-white/70">Nome do Funcionário</Label>
-                                                <Input 
+                                                <Input
                                                     value={newCard.nome_funcionario}
-                                                    onChange={(e) => setNewCard({...newCard, nome_funcionario: e.target.value})}
+                                                    onChange={(e) => setNewCard({ ...newCard, nome_funcionario: e.target.value })}
                                                     className="bg-white/5 border-white/10 text-white"
                                                 />
                                             </div>
                                             <div>
                                                 <Label className="text-white/70">Setor</Label>
-                                                <Input 
+                                                <Input
                                                     value={newCard.setor}
-                                                    onChange={(e) => setNewCard({...newCard, setor: e.target.value})}
+                                                    onChange={(e) => setNewCard({ ...newCard, setor: e.target.value })}
                                                     className="bg-white/5 border-white/10 text-white"
                                                 />
                                             </div>
@@ -439,25 +490,25 @@ export default function Admin() {
                                     )}
                                     <div>
                                         <Label className="text-white/70">Descrição</Label>
-                                        <Textarea 
+                                        <Textarea
                                             value={newCard.descricao}
-                                            onChange={(e) => setNewCard({...newCard, descricao: e.target.value})}
+                                            onChange={(e) => setNewCard({ ...newCard, descricao: e.target.value })}
                                             className="bg-white/5 border-white/10 text-white"
                                         />
                                     </div>
                                     <div>
                                         <Label className="text-white/70">URL da Imagem</Label>
-                                        <Input 
+                                        <Input
                                             value={newCard.imagem_url}
-                                            onChange={(e) => setNewCard({...newCard, imagem_url: e.target.value})}
+                                            onChange={(e) => setNewCard({ ...newCard, imagem_url: e.target.value })}
                                             className="bg-white/5 border-white/10 text-white"
                                         />
                                     </div>
                                     <div>
                                         <Label className="text-white/70">Mês de Referência</Label>
-                                        <Input 
+                                        <Input
                                             value={newCard.mes_referencia}
-                                            onChange={(e) => setNewCard({...newCard, mes_referencia: e.target.value})}
+                                            onChange={(e) => setNewCard({ ...newCard, mes_referencia: e.target.value })}
                                             className="bg-white/5 border-white/10 text-white"
                                             placeholder="Ex: Janeiro 2025"
                                         />
@@ -465,9 +516,9 @@ export default function Admin() {
                                     {newCard.tipo === 'campanha' && (
                                         <div>
                                             <Label className="text-white/70">Cor de Destaque</Label>
-                                            <Select 
+                                            <Select
                                                 value={newCard.cor_destaque}
-                                                onValueChange={(value) => setNewCard({...newCard, cor_destaque: value})}
+                                                onValueChange={(value) => setNewCard({ ...newCard, cor_destaque: value })}
                                             >
                                                 <SelectTrigger className="bg-white/5 border-white/10 text-white">
                                                     <SelectValue placeholder="Selecione uma cor" />
@@ -482,14 +533,14 @@ export default function Admin() {
                                     )}
                                     <div>
                                         <Label className="text-white/70">Ordem de Exibição</Label>
-                                        <Input 
+                                        <Input
                                             type="number"
                                             value={newCard.ordem}
-                                            onChange={(e) => setNewCard({...newCard, ordem: parseInt(e.target.value) || 0})}
+                                            onChange={(e) => setNewCard({ ...newCard, ordem: parseInt(e.target.value) || 0 })}
                                             className="bg-white/5 border-white/10 text-white"
                                         />
                                     </div>
-                                    <Button 
+                                    <Button
                                         onClick={() => createCardMutation.mutate(newCard)}
                                         disabled={!newCard.titulo}
                                         className="w-full bg-green-500 hover:bg-green-600 text-black"
@@ -506,74 +557,74 @@ export default function Admin() {
                                 {cardsMural.map((card) => {
                                     const Icon = tipoIcons[card.tipo] || Star;
                                     return (
-                                    <Card key={card.id} className="bg-[#111111] border-white/10">
-                                        <CardContent className="p-4">
-                                            {editingCard?.id === card.id ? (
-                                                <div className="space-y-3">
-                                                    <h4 className="text-white font-semibold mb-3">Editando Card: {card.titulo}</h4>
-                                                    {/* Common Fields */}
-                                                    <Input value={editingCard.titulo} onChange={(e) => setEditingCard({...editingCard, titulo: e.target.value})} placeholder="Título" className="bg-white/5 border-white/10 text-white" />
-                                                    <Textarea value={editingCard.descricao} onChange={(e) => setEditingCard({...editingCard, descricao: e.target.value})} placeholder="Descrição" className="bg-white/5 border-white/10 text-white" />
-                                                    <Input value={editingCard.imagem_url} onChange={(e) => setEditingCard({...editingCard, imagem_url: e.target.value})} placeholder="URL da Imagem" className="bg-white/5 border-white/10 text-white" />
-                                                     <Input value={editingCard.mes_referencia} onChange={(e) => setEditingCard({...editingCard, mes_referencia: e.target.value})} placeholder="Mês de Referência" className="bg-white/5 border-white/10 text-white" />
-                                                    
-                                                    {/* Conditional Fields based on type */}
-                                                    {editingCard.tipo === 'funcionario_destaque' && (
-                                                        <>
-                                                            <Input value={editingCard.nome_funcionario} onChange={(e) => setEditingCard({...editingCard, nome_funcionario: e.target.value})} placeholder="Nome do Funcionário" className="bg-white/5 border-white/10 text-white" />
-                                                            <Input value={editingCard.setor} onChange={(e) => setEditingCard({...editingCard, setor: e.target.value})} placeholder="Setor" className="bg-white/5 border-white/10 text-white" />
-                                                        </>
-                                                    )}
+                                        <Card key={card.id} className="bg-[#111111] border-white/10">
+                                            <CardContent className="p-4">
+                                                {editingCard?.id === card.id ? (
+                                                    <div className="space-y-3">
+                                                        <h4 className="text-white font-semibold mb-3">Editando Card: {card.titulo}</h4>
+                                                        {/* Common Fields */}
+                                                        <Input value={editingCard.titulo} onChange={(e) => setEditingCard({ ...editingCard, titulo: e.target.value })} placeholder="Título" className="bg-white/5 border-white/10 text-white" />
+                                                        <Textarea value={editingCard.descricao} onChange={(e) => setEditingCard({ ...editingCard, descricao: e.target.value })} placeholder="Descrição" className="bg-white/5 border-white/10 text-white" />
+                                                        <Input value={editingCard.imagem_url} onChange={(e) => setEditingCard({ ...editingCard, imagem_url: e.target.value })} placeholder="URL da Imagem" className="bg-white/5 border-white/10 text-white" />
+                                                        <Input value={editingCard.mes_referencia} onChange={(e) => setEditingCard({ ...editingCard, mes_referencia: e.target.value })} placeholder="Mês de Referência" className="bg-white/5 border-white/10 text-white" />
 
-                                                    <div className="flex gap-2 items-center">
-                                                         <Label className="text-white/70">Ordem:</Label>
-                                                        <Input type="number" value={editingCard.ordem} onChange={(e) => setEditingCard({...editingCard, ordem: parseInt(e.target.value) || 0})} className="bg-white/5 border-white/10 text-white w-20" />
-                                                        <div className="flex items-center space-x-2 ml-auto">
-                                                            <Switch id={`ativo-${card.id}`} checked={editingCard.ativo} onCheckedChange={(checked) => setEditingCard({...editingCard, ativo: checked})} />
-                                                            <Label htmlFor={`ativo-${card.id}`} className="text-white/70">Ativo</Label>
-                                                        </div>
-                                                    </div>
+                                                        {/* Conditional Fields based on type */}
+                                                        {editingCard.tipo === 'funcionario_destaque' && (
+                                                            <>
+                                                                <Input value={editingCard.nome_funcionario} onChange={(e) => setEditingCard({ ...editingCard, nome_funcionario: e.target.value })} placeholder="Nome do Funcionário" className="bg-white/5 border-white/10 text-white" />
+                                                                <Input value={editingCard.setor} onChange={(e) => setEditingCard({ ...editingCard, setor: e.target.value })} placeholder="Setor" className="bg-white/5 border-white/10 text-white" />
+                                                            </>
+                                                        )}
 
-                                                    <div className="flex gap-2 pt-2">
-                                                        <Button onClick={() => updateCardMutation.mutate({ id: card.id, data: editingCard })} className="bg-green-500 hover:bg-green-600 text-black" size="sm">
-                                                            <Save className="w-4 h-4 mr-1" /> Salvar
-                                                        </Button>
-                                                        <Button onClick={() => setEditingCard(null)} variant="outline" size="sm" className="border-white/10 text-white">
-                                                            <X className="w-4 h-4" /> Cancelar
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-start gap-3 flex-1">
-                                                        <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                                                            <Icon className="w-5 h-5 text-green-500" />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h4 className="text-white font-medium">{card.titulo}</h4>
-                                                            {card.nome_funcionario && <p className="text-green-500 text-sm">{card.nome_funcionario}</p>}
-                                                            {card.setor && <p className="text-white/40 text-sm">{card.setor}</p>}
-                                                            <div className="flex items-center gap-3 mt-2 flex-wrap">
-                                                                <span className="text-xs text-white/40 capitalize px-2 py-0.5 rounded-full bg-white/5">{card.tipo?.replace('_', ' ')}</span>
-                                                                <span className={`text-xs px-2 py-0.5 rounded-full ${card.ativo ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                                                    {card.ativo ? 'Ativo' : 'Inativo'}
-                                                                </span>
-                                                                {card.mes_referencia && <span className="text-xs text-white/40">{card.mes_referencia}</span>}
+                                                        <div className="flex gap-2 items-center">
+                                                            <Label className="text-white/70">Ordem:</Label>
+                                                            <Input type="number" value={editingCard.ordem} onChange={(e) => setEditingCard({ ...editingCard, ordem: parseInt(e.target.value) || 0 })} className="bg-white/5 border-white/10 text-white w-20" />
+                                                            <div className="flex items-center space-x-2 ml-auto">
+                                                                <Switch id={`ativo-${card.id}`} checked={editingCard.ativo} onCheckedChange={(checked) => setEditingCard({ ...editingCard, ativo: checked })} />
+                                                                <Label htmlFor={`ativo-${card.id}`} className="text-white/70">Ativo</Label>
                                                             </div>
                                                         </div>
+
+                                                        <div className="flex gap-2 pt-2">
+                                                            <Button onClick={() => updateCardMutation.mutate({ id: card.id, data: editingCard })} className="bg-green-500 hover:bg-green-600 text-black" size="sm">
+                                                                <Save className="w-4 h-4 mr-1" /> Salvar
+                                                            </Button>
+                                                            <Button onClick={() => setEditingCard(null)} variant="outline" size="sm" className="border-white/10 text-white">
+                                                                <X className="w-4 h-4" /> Cancelar
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-1">
-                                                         <Button onClick={() => setEditingCard(card)} variant="ghost" size="icon" className="text-white/50 hover:text-white">
-                                                            <Edit className="w-4 h-4" />
-                                                        </Button>
-                                                        <Button onClick={() => deleteCardMutation.mutate(card.id)} variant="ghost" size="icon" className="text-red-500 hover:text-red-400">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
+                                                ) : (
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex items-start gap-3 flex-1">
+                                                            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                                                                <Icon className="w-5 h-5 text-green-500" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <h4 className="text-white font-medium">{card.titulo}</h4>
+                                                                {card.nome_funcionario && <p className="text-green-500 text-sm">{card.nome_funcionario}</p>}
+                                                                {card.setor && <p className="text-white/40 text-sm">{card.setor}</p>}
+                                                                <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                                                    <span className="text-xs text-white/40 capitalize px-2 py-0.5 rounded-full bg-white/5">{card.tipo?.replace('_', ' ')}</span>
+                                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${card.ativo ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                                                        {card.ativo ? 'Ativo' : 'Inativo'}
+                                                                    </span>
+                                                                    {card.mes_referencia && <span className="text-xs text-white/40">{card.mes_referencia}</span>}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Button onClick={() => setEditingCard(card)} variant="ghost" size="icon" className="text-white/50 hover:text-white">
+                                                                <Edit className="w-4 h-4" />
+                                                            </Button>
+                                                            <Button onClick={() => deleteCardMutation.mutate(card.id)} variant="ghost" size="icon" className="text-red-500 hover:text-red-400">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
+                                                )}
+                                            </CardContent>
+                                        </Card>
                                     );
                                 })}
                                 {cardsMural.length === 0 && (

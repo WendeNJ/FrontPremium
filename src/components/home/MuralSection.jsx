@@ -1,20 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '../../api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Calendar, Star, Cake, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '../../Layout';
 
 const tipoIcons = { funcionario_destaque: Star, aniversariantes: Cake, campanha: Heart };
 const tipoLabels = { funcionario_destaque: 'Funcionário Destaque', aniversariantes: 'Aniversariantes', campanha: 'Campanha' };
-const campanhaColors = { amarelo: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30', rosa: 'from-pink-500/20 to-pink-600/10 border-pink-500/30', azul: 'from-blue-500/20 to-blue-600/10 border-blue-500/30', default: 'from-green-500/20 to-green-600/10 border-green-500/30' };
+const campanhaColors = { 
+    amarelo: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30', 
+    rosa: 'from-pink-500/20 to-pink-600/10 border-pink-500/30', 
+    azul: 'from-blue-500/20 to-blue-600/10 border-blue-500/30', 
+    default: 'from-green-500/20 to-green-600/10 border-green-500/30' 
+};
+
+// Notícias estáticas
+const noticiasEstaticas = [
+    {
+        id: 1,
+        titulo: 'Nova Parceria com Marcas Premium',
+        resumo: 'A Premium Distribuidora anuncia novas parcerias estratégicas com marcas líderes do mercado de bebidas, expandindo ainda mais nosso portfólio de produtos.',
+        imagem_url: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=800&q=80',
+        data_publicacao: 'Janeiro 2026',
+        ativo: true
+    },
+    {
+        id: 2,
+        titulo: 'Expansão para Novas Regiões',
+        resumo: 'Continuamos crescendo! Agora atendemos mais 5 cidades da região, totalizando 51 municípios no Piauí e Ceará.',
+        imagem_url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80',
+        data_publicacao: 'Dezembro 2025',
+        ativo: true
+    },
+    {
+        id: 3,
+        titulo: 'Compromisso com a Sustentabilidade',
+        resumo: 'Implementamos novas práticas sustentáveis em toda nossa operação, reduzindo nosso impacto ambiental e contribuindo para um futuro melhor.',
+        imagem_url: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&q=80',
+        data_publicacao: 'Novembro 2025',
+        ativo: true
+    }
+];
+
+// Cards do mural com Cleverton
+const cardsMuralEstaticos = [
+   
+    {
+        id: 2,
+        tipo: 'aniversariantes',
+        titulo: 'Aniversariantes do Mês',
+        descricao: 'Parabenizamos todos os colaboradores que completam mais um ano de vida em janeiro!',
+        mes_referencia: 'Janeiro 2026',
+        cor_destaque: 'rosa',
+        ordem: 2,
+        ativo: true
+    },
+    {
+        id: 3,
+        tipo: 'campanha',
+        titulo: 'Campanha Verão',
+        descricao: 'Participe da nossa campanha de vendas de verão e concorra a prêmios incríveis!',
+        cor_destaque: 'amarelo',
+        ordem: 3,
+        ativo: true
+    },
+    {
+        id: 4,
+        tipo: 'funcionario_destaque',
+        titulo: 'Colaborador do Mês',
+        nome_funcionario: 'Cleverton',
+        setor: 'TI',
+        descricao: 'Reconhecido pelo comprometimento e excelência em projetos de tecnologia.',
+     
+        mes_referencia: 'Janeiro 2026',
+        cor_destaque: 'default',
+        ordem: 4,
+        ativo: true
+    }
+];
 
 export default function MuralSection() {
     const { isDark } = useTheme();
     const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
 
-    const { data: noticias = [] } = useQuery({ queryKey: ['noticias'], queryFn: () => base44.entities.Noticia.filter({ ativo: true }, '-created_date', 3) });
-    const { data: cardsMural = [] } = useQuery({ queryKey: ['cardsMural'], queryFn: () => base44.entities.CardMural.filter({ ativo: true }, 'ordem') });
+    const noticias = noticiasEstaticas.filter(n => n.ativo);
+    const cardsMural = cardsMuralEstaticos.filter(c => c.ativo).sort((a, b) => a.ordem - b.ordem);
 
     useEffect(() => {
         if (noticias.length > 1) {
@@ -29,7 +97,6 @@ export default function MuralSection() {
     return (
         <section id="mural" className={`relative py-32 overflow-hidden transition-colors duration-500 ${isDark ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
             <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent ${isDark ? 'via-white/10' : 'via-black/10'} to-transparent`} />
-            
             <div className="max-w-7xl mx-auto px-6">
                 <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
                     <span className="text-green-500 text-sm font-semibold tracking-widest uppercase mb-4 block">Novidades</span>
