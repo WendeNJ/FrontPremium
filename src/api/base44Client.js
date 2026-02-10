@@ -1,8 +1,9 @@
-const API_BASE_URL = "http://localhost:8081"; // backend local
+const API_BASE_URL = "http://localhost:8081";
 
 async function request(endpoint, method = "GET", body = null) {
   const options = {
     method,
+    credentials: "include", // 🔥 Equivalente ao withCredentials do axios
     headers: {
       "Content-Type": "application/json",
     },
@@ -20,6 +21,9 @@ async function request(endpoint, method = "GET", body = null) {
   return res.status !== 204 ? res.json() : null;
 }
 
+// ============================================
+// 📌 EXPORT COMPATÍVEL COM CÓDIGO ANTIGO
+// ============================================
 export const base44 = {
   entities: {
     Unidades: {
@@ -43,6 +47,9 @@ export const base44 = {
       create: (data) => request(`/users`, "POST", data),
       update: (id, data) => request(`/users/${id}`, "PUT", data),
       delete: (id) => request(`/users/${id}`, "DELETE"),
+      login: (credentials) => request(`/users/login`, "POST", credentials),
+      logout: () => request(`/users/logout`, "POST"),
+      testAuth: () => request(`/users/test/administrator`),
     },
 
     Respostas: {
@@ -53,19 +60,28 @@ export const base44 = {
     },
 
     Manifestacoes: {
-  list: () => request(`/manifestacoes`),
+      list: () => request(`/manifestacoes`),
+      consultarPorProtocolo: (protocolo) => request(`/manifestacoes/protocolo/${protocolo}`),
+      create: (data) => request(`/manifestacoes`, "POST", data),
+      update: (id, data) => request(`/manifestacoes/${id}`, "PUT", data),
+      delete: (id) => request(`/manifestacoes/${id}`, "DELETE"),
+    },
 
-  consultarPorProtocolo: (protocolo) =>
-    request(`/manifestacoes/protocolo/${protocolo}`),
+    CardMural: {
+      list: () => request(`/api/cards`),
+      getById: (id) => request(`/api/cards/${id}`),
+      listByType: (tipo) => request(`/api/cards/tipo/${tipo}`),
+      create: (data) => request(`/api/cards`, "POST", data),
+      update: (id, data) => request(`/api/cards/${id}`, "PUT", data),
+      delete: (id) => request(`/api/cards/${id}`, "DELETE"),
+    },
 
-  create: (data) =>
-    request(`/manifestacoes`, "POST", data),
-
-  update: (id, data) =>
-    request(`/manifestacoes/${id}`, "PUT", data),
-
-  delete: (id) =>
-    request(`/manifestacoes/${id}`, "DELETE"),
-},
+    Noticia: {
+      list: () => request(`/api/noticias`),
+      getById: (id) => request(`/api/noticias/${id}`),
+      create: (data) => request(`/api/noticias`, "POST", data),
+      update: (id, data) => request(`/api/noticias/${id}`, "PUT", data),
+      delete: (id) => request(`/api/noticias/${id}`, "DELETE"),
+    },
   },
 };

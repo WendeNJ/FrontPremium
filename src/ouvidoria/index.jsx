@@ -10,6 +10,7 @@ import {
     X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import DashboardStats from '@/ouvidoria/DashboardStats'
 
 const manifestationTypes = [
     {
@@ -48,8 +49,6 @@ export default function OuvidoriaHome({ config }) {
         <div className="min-h-screen flex flex-col">
             {/* HEADER */}
             <header className="bg-[#0a0a0a] sticky top-0 z-50">
-
-
                 <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
                     <Link to="/ouvidoria" className="flex items-center gap-4">
                         <img
@@ -73,9 +72,7 @@ export default function OuvidoriaHome({ config }) {
                         >
                             ADMIN
                         </Link>
-
                     </nav>
-
 
                     <div className="hidden md:flex gap-3">
                         <Button asChild className="bg-white text-[#00703C] rounded-full">
@@ -105,13 +102,12 @@ export default function OuvidoriaHome({ config }) {
                         </Link>
                     </div>
                 )}
-
-
             </header>
 
-            {/* HERO */}
+            {/* HERO COM DASHBOARD */}
             <section className="py-20 bg-white">
                 <div className="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
+                    {/* TEXTO À ESQUERDA */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -134,6 +130,15 @@ export default function OuvidoriaHome({ config }) {
                                 <Link to="/ouvidoria/consultar">Consultar protocolo</Link>
                             </Button>
                         </div>
+                    </motion.div>
+
+                    {/* DASHBOARD À DIREITA */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <DashboardStats />
                     </motion.div>
                 </div>
             </section>
