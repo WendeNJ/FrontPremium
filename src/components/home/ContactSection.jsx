@@ -7,8 +7,8 @@ export default function ContactSection() {
     const { isDark } = useTheme();
     
     const contacts = [
-        { icon: Phone, title: 'Central de Atendimento', lines: ['Entre em contato com nossa', 'equipe especializada', '86 3220-3435'] },
-        { icon: Mail, title: 'Email', lines: ['Envie sua mensagem para', 'nosso time', 'contato@premium.com.br'] },
+        { icon: Phone, title: 'Central de Atendimento', lines: ['Entre em contato com nossa', 'equipe especializada', '(86) 8825-0227'] },
+        { icon: Mail, title: 'Email', lines: ['Envie sua mensagem para', 'nosso time', ' rh@premiumteresina.com.br'] },
     ];
 
     return (

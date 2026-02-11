@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { consultarPorProtocolo } from '@/api/ouvidoriaApi'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { 
   Search, 
   FileText, 
@@ -20,10 +22,42 @@ import {
   Phone,
   ArrowLeft,
   Menu,
-  X
+  X,
+  Shield,
+  Eye,
+  Info,
+  ChevronRight,
+  Home
 } from 'lucide-react'
 
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
+
+const STATUS_CONFIG = {
+  ABERTA: { 
+    label: 'Aberta', 
+    color: 'bg-blue-500/10 text-blue-700 border-blue-200', 
+    icon: AlertCircle,
+    bg: 'bg-blue-50'
+  },
+  EM_ANALISE: { 
+    label: 'Em Análise', 
+    color: 'bg-yellow-500/10 text-yellow-700 border-yellow-200', 
+    icon: RefreshCw,
+    bg: 'bg-yellow-50'
+  },
+  RESPONDIDA: { 
+    label: 'Respondida', 
+    color: 'bg-green-500/10 text-green-700 border-green-200', 
+    icon: CheckCircle,
+    bg: 'bg-green-50'
+  },
+  ENCERRADA: { 
+    label: 'Encerrada', 
+    color: 'bg-gray-500/10 text-gray-700 border-gray-200', 
+    icon: XCircle,
+    bg: 'bg-gray-50'
+  }
+}
 
 export default function ConsultarProtocolo() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -45,9 +79,8 @@ export default function ConsultarProtocolo() {
     setManifestacao(null)
 
     try {
-     const res = await consultarPorProtocolo(protocolo.trim())
-setManifestacao(res.data)
-
+      const res = await consultarPorProtocolo(protocolo.trim())
+      setManifestacao(res.data)
     } catch (err) {
       console.error('Erro ao consultar:', err)
       setError('Protocolo não encontrado ou inválido')
@@ -62,7 +95,6 @@ setManifestacao(res.data)
     setError('')
   }
 
-  // Função para formatar data
   function formatarData(dataString) {
     if (!dataString) return ''
     const data = new Date(dataString)
@@ -75,364 +107,461 @@ setManifestacao(res.data)
     })
   }
 
-  // Função para obter cor do status
- // Função para obter cor do status
-function getStatusColor(status) {
-  switch (status?.toUpperCase()) {
-    case 'ABERTA':
-      return 'bg-blue-100 text-blue-800'
-    case 'EM_ANALISE':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'RESPONDIDA':
-      return 'bg-green-100 text-green-800'
-    case 'ENCERRADA':
-      return 'bg-gray-100 text-gray-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
-  }
-}
-
-// Função para obter ícone do status
-function getStatusIcon(status) {
-  switch (status?.toUpperCase()) {
-    case 'ABERTA':
-      return <AlertCircle className="w-5 h-5" />
-    case 'EM_ANALISE':
-      return <RefreshCw className="w-5 h-5" />
-    case 'RESPONDIDA':
-      return <CheckCircle className="w-5 h-5" />
-    case 'ENCERRADA':
-      return <XCircle className="w-5 h-5" />
-    default:
-      return <AlertCircle className="w-5 h-5" />
-  }
-}
-  // Função para formatar o tipo de manifestação
   function formatarTipo(tipo) {
-    switch (tipo?.toUpperCase()) {
-      case 'RECLAMACAO':
-        return 'Reclamação'
-      case 'DENUNCIA':
-        return 'Denúncia'
-      case 'SUGESTAO':
-        return 'Sugestão'
-      case 'ELOGIO':
-        return 'Elogio'
-      case 'SOLICITACAO':
-        return 'Solicitação'
-      default:
-        return tipo || 'Não informado'
+    const tipos = { 
+      RECLAMACAO: 'Reclamação', 
+      DENUNCIA: 'Denúncia', 
+      SUGESTAO: 'Sugestão', 
+      ELOGIO: 'Elogio', 
+      SOLICITACAO: 'Solicitação' 
     }
+    return tipos[tipo?.toUpperCase()] || tipo || 'Não informado'
   }
 
+  // ============================================
+  // 📌 RENDER
+  // ============================================
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* HEADER - IDÊNTICO AO SEU SITE */}
-      <header className="bg-[#0a0a0a] sticky top-0 z-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
+      {/* HEADER PREMIUM */}
+      <header className="bg-[#0A0A0A] border-b border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-          <Link to="/ouvidoria" className="flex items-center gap-4">
-            <img src={LOGO_URL} alt="Logo" className="h-14" />
-            <span className="text-white font-bold hidden sm:block">
+          <Link to="/ouvidoria" className="flex items-center gap-4 group">
+            <img 
+              src={LOGO_URL} 
+              alt="Logo" 
+              className="h-14 transition-transform group-hover:scale-105" 
+            />
+            <span className="text-white font-bold text-lg tracking-wide hidden sm:block">
               SISTEMA DE OUVIDORIA
             </span>
           </Link>
 
-          <nav className="hidden md:flex gap-8 text-white text-sm font-medium">
-            <Link to="/ouvidoria">INÍCIO</Link>
-            <Link to="/ouvidoria/sobre">SOBRE</Link>
-            <Link to="/ouvidoria/consultar" className="text-white font-semibold">
+          <nav className="hidden md:flex gap-8">
+            <Link 
+              to="/ouvidoria" 
+              className="text-white/70 hover:text-white transition-colors"
+            >
+              INÍCIO
+            </Link>
+            <Link 
+              to="/ouvidoria/sobre" 
+              className="text-white/70 hover:text-white transition-colors"
+            >
+              SOBRE
+            </Link>
+            <Link 
+              to="/ouvidoria/consultar" 
+              className="text-white font-medium border-b-2 border-white"
+            >
               CONSULTAR
             </Link>
           </nav>
 
           <div className="hidden md:flex gap-3">
-            <Button asChild className="bg-white text-[#00703C] rounded-full">
-              <Link to="/ouvidoria/nova">Nova Manifestação</Link>
+            <Button 
+              asChild 
+              className="bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all"
+            >
+              <Link to="/ouvidoria/nova">
+                <FileText className="w-4 h-4 mr-2" />
+                Nova Manifestação
+              </Link>
             </Button>
           </div>
 
           <button
-            className="md:hidden text-white"
+            className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X /> : <Menu />}
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden bg-[#0a0a0a] px-4 pb-4 flex flex-col gap-3 text-white">
-            <Link to="/ouvidoria">Início</Link>
-            <Link to="/ouvidoria/sobre">Sobre</Link>
-            <Link to="/ouvidoria/consultar" className="font-semibold">
-              Consultar
-            </Link>
-            <div className="pt-2">
-              <Button asChild className="bg-white text-[#00703C] rounded-full w-full">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="md:hidden bg-[#0A0A0A] px-4 pb-4 border-t border-gray-800"
+          >
+            <div className="flex flex-col gap-3 py-3">
+              <Link to="/ouvidoria" className="text-white/70 hover:text-white py-2">Início</Link>
+              <Link to="/ouvidoria/sobre" className="text-white/70 hover:text-white py-2">Sobre</Link>
+              <Link to="/ouvidoria/consultar" className="text-white font-medium py-2">Consultar</Link>
+              <Button 
+                asChild 
+                className="bg-gradient-to-r from-[#00482B] to-[#00703C] text-white rounded-full w-full mt-2"
+              >
                 <Link to="/ouvidoria/nova">Nova Manifestação</Link>
               </Button>
             </div>
-          </div>
+          </motion.div>
         )}
       </header>
 
       {/* CONTEÚDO PRINCIPAL */}
-      <div className="flex-1 py-12 px-4">
+      <div className="flex-1 py-16 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
           className="max-w-4xl mx-auto"
         >
-          {/* Breadcrumb - Mesmo estilo da Nova Manifestação */}
-          <div className="mb-6">
+          {/* Breadcrumb */}
+          <div className="mb-8">
             <Link 
               to="/ouvidoria" 
-              className="text-sm text-gray-600 hover:text-[#00703C] flex items-center gap-2"
+              className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-[#00703C] transition-colors bg-white px-4 py-2 rounded-full shadow-sm hover:shadow border border-gray-200"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar para início
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar para Início
             </Link>
           </div>
 
-          {/* Card Principal - Mesmo estilo da Nova Manifestação */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            {/* Header do Card - Mesma cor e estilo */}
-            <div className="bg-[#00482B] px-8 py-6">
-              <h1 className="text-3xl font-bold text-white">
-                Consultar Manifestação
-              </h1>
-              <p className="text-white/80 mt-2">
-                Digite o protocolo para acompanhar o andamento da sua manifestação
+          {/* Card Principal */}
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            {/* Header do Card */}
+            <div className="bg-gradient-to-r from-[#00482B] to-[#00703C] px-8 py-8">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Search className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold text-white">
+                  Consultar Manifestação
+                </h1>
+              </div>
+              <p className="text-white/90 text-lg ml-11">
+                Digite o protocolo para acompanhar o andamento
               </p>
             </div>
 
             {/* Formulário de Consulta */}
-            <div className="p-8">
-              {/* Campo de Protocolo */}
+            <div className="p-8 md:p-10">
               <form onSubmit={handleConsultar} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Número do Protocolo *
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-[#00482B]" />
+                    Número do Protocolo
                   </label>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      placeholder="Ex: 18C9A407"
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none"
-                      value={protocolo}
-                      onChange={(e) => setProtocolo(e.target.value.toUpperCase())}
-                      disabled={loading}
-                    />
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Ex: 18C9A407"
+                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none text-gray-900 placeholder:text-gray-400"
+                        value={protocolo}
+                        onChange={(e) => setProtocolo(e.target.value.toUpperCase())}
+                        disabled={loading}
+                      />
+                    </div>
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="bg-[#00482B] hover:bg-[#00703C] text-white px-8 rounded-full"
+                      className="bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 min-w-[160px]"
                     >
                       {loading ? (
-                        <span className="flex items-center gap-2">
-                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                           </svg>
                           Buscando...
                         </span>
                       ) : (
-                        <span className="flex items-center gap-2">
-                          <Search className="w-4 h-4" />
+                        <span className="flex items-center justify-center gap-2">
+                          <Search className="w-5 h-5" />
                           Consultar
                         </span>
                       )}
                     </Button>
                   </div>
-                  {error && (
-                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4" />
-                      {error}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-2">
-                    * O protocolo foi enviado para o email cadastrado no momento da manifestação
+                  
+                  <AnimatePresence>
+                    {error && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="text-red-500 text-sm mt-2 flex items-center gap-2 bg-red-50 px-4 py-3 rounded-lg"
+                      >
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {error}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                  
+                  <p className="text-xs text-gray-500 mt-3 flex items-center gap-2 bg-gray-50 px-4 py-3 rounded-lg">
+                    <Info className="w-4 h-4 text-gray-400" />
+                    O protocolo foi enviado para o e-mail cadastrado no momento da manifestação
                   </p>
                 </div>
               </form>
 
               {/* Resultado da Consulta */}
-              {manifestacao && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-8 space-y-6"
-                >
-                  {/* Separador */}
-                  <div className="border-t border-gray-200 pt-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-6">
-                      Detalhes da Manifestação
-                    </h2>
-
-                    {/* Card de Status */}
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 mb-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${getStatusColor(manifestacao.status)}`}>
-                            {getStatusIcon(manifestacao.status)}
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Status Atual</p>
-                            <p className="text-lg font-bold text-gray-800">
-                              {manifestacao.status || 'Não informado'}
-                            </p>
-                          </div>
+              <AnimatePresence mode="wait">
+                {manifestacao && (
+                  <motion.div
+                    key="resultado"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.4 }}
+                    className="mt-10 space-y-8"
+                  >
+                    <Separator className="bg-gray-200" />
+                    
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                        <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                          <FileText className="w-5 h-5 text-[#00482B]" />
                         </div>
-                        
-                        <div className="flex items-center gap-3">
-                          <div className="text-center">
-                            <p className="text-sm text-gray-600">Protocolo</p>
-                            <p className="text-2xl font-mono font-bold text-[#00482B]">
+                        Detalhes da Manifestação
+                      </h2>
+
+                      {/* Card de Status */}
+                      <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-6 mb-8 border border-gray-200 shadow-sm">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-4 rounded-xl ${STATUS_CONFIG[manifestacao.status]?.bg || 'bg-gray-100'}`}>
+                              {(() => {
+                                const Icon = STATUS_CONFIG[manifestacao.status]?.icon || AlertCircle
+                                return <Icon className={`w-8 h-8 ${STATUS_CONFIG[manifestacao.status]?.color?.split(' ')[1] || 'text-gray-700'}`} />
+                              })()}
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Status Atual</p>
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl font-bold text-gray-900">
+                                  {STATUS_CONFIG[manifestacao.status]?.label || manifestacao.status}
+                                </span>
+                                <Badge className={STATUS_CONFIG[manifestacao.status]?.color}>
+                                  {STATUS_CONFIG[manifestacao.status]?.label}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-[#00482B]/5 px-6 py-4 rounded-xl border border-[#00482B]/10">
+                            <p className="text-sm text-gray-600 mb-1">Protocolo</p>
+                            <p className="text-3xl font-mono font-bold text-[#00482B] tracking-wider">
                               {manifestacao.protocolo}
                             </p>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Grid de Informações */}
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Coluna 1: Informações da Manifestação */}
-                      <div className="space-y-4">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center gap-2 text-gray-600 mb-2">
-                            <Tag className="w-4 h-4" />
-                            <span className="text-sm font-medium">Tipo</span>
+                      {/* Grid de Informações */}
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Coluna 1 */}
+                        <div className="space-y-4">
+                          <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex items-center gap-3 text-gray-700 mb-3">
+                              <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                                <Tag className="w-4 h-4 text-[#00482B]" />
+                              </div>
+                              <span className="text-sm font-semibold">Tipo</span>
+                            </div>
+                            <p className="font-medium text-gray-900 ml-9">{formatarTipo(manifestacao.tipo)}</p>
                           </div>
-                          <p className="font-medium">{formatarTipo(manifestacao.tipo)}</p>
+
+                          <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex items-center gap-3 text-gray-700 mb-3">
+                              <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                                <Building className="w-4 h-4 text-[#00482B]" />
+                              </div>
+                              <span className="text-sm font-semibold">Unidade</span>
+                            </div>
+                            <p className="font-medium text-gray-900 ml-9">{manifestacao.unidadenome || 'Não informada'}</p>
+                          </div>
+
+                          <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex items-center gap-3 text-gray-700 mb-3">
+                              <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                                <FileText className="w-4 h-4 text-[#00482B]" />
+                              </div>
+                              <span className="text-sm font-semibold">Categoria</span>
+                            </div>
+                            <p className="font-medium text-gray-900 ml-9">{manifestacao.categoriaNome || 'Não informada'}</p>
+                          </div>
                         </div>
 
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center gap-2 text-gray-600 mb-2">
-                            <Building className="w-4 h-4" />
-                            <span className="text-sm font-medium">Unidade</span>
+                        {/* Coluna 2 */}
+                        <div className="space-y-4">
+                          <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex items-center gap-3 text-gray-700 mb-3">
+                              <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                                <Calendar className="w-4 h-4 text-[#00482B]" />
+                              </div>
+                              <span className="text-sm font-semibold">Data de Criação</span>
+                            </div>
+                            <p className="font-medium text-gray-900 ml-9">
+                              {formatarData(manifestacao.datacriacao)}
+                            </p>
                           </div>
-                          <p className="font-medium">{manifestacao.unidadenome || 'Não informada'}</p>
-                        </div>
 
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center gap-2 text-gray-600 mb-2">
-                            <FileText className="w-4 h-4" />
-                            <span className="text-sm font-medium">Categoria</span>
-                          </div>
-                          <p className="font-medium">{manifestacao.categoriaNome || 'Não informada'}</p>
+                          {!manifestacao.anonima ? (
+                            <>
+                              <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                                <div className="flex items-center gap-3 text-gray-700 mb-3">
+                                  <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                                    <User className="w-4 h-4 text-[#00482B]" />
+                                  </div>
+                                  <span className="text-sm font-semibold">Solicitante</span>
+                                </div>
+                                <p className="font-medium text-gray-900 ml-9">{manifestacao.nome || 'Não informado'}</p>
+                              </div>
+
+                              <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                                <div className="flex items-center gap-3 text-gray-700 mb-3">
+                                  <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                                    <Mail className="w-4 h-4 text-[#00482B]" />
+                                  </div>
+                                  <span className="text-sm font-semibold">E-mail</span>
+                                </div>
+                                <p className="font-medium text-gray-900 ml-9 break-all">{manifestacao.email || 'Não informado'}</p>
+                              </div>
+
+                              {manifestacao.telefone && (
+                                <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                                  <div className="flex items-center gap-3 text-gray-700 mb-3">
+                                    <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                                      <Phone className="w-4 h-4 text-[#00482B]" />
+                                    </div>
+                                    <span className="text-sm font-semibold">Telefone</span>
+                                  </div>
+                                  <p className="font-medium text-gray-900 ml-9">{manifestacao.telefone}</p>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-5 border border-purple-200 shadow-sm">
+                              <div className="flex items-center gap-3 text-purple-700 mb-3">
+                                <div className="p-2 bg-purple-100 rounded-lg">
+                                  <Shield className="w-4 h-4 text-purple-600" />
+                                </div>
+                                <span className="text-sm font-semibold">Tipo de Manifestação</span>
+                              </div>
+                              <p className="font-bold text-purple-700 ml-9">ANÔNIMA</p>
+                              <p className="text-xs text-purple-600 ml-9 mt-2">
+                                Identidade preservada conforme política de sigilo
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Coluna 2: Datas e Contato */}
-                      <div className="space-y-4">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center gap-2 text-gray-600 mb-2">
-                            <Calendar className="w-4 h-4" />
-                            <span className="text-sm font-medium">Data de Criação</span>
+                      {/* Mensagem/Descrição */}
+                      <div className="mt-6">
+                        <div className="flex items-center gap-3 text-gray-700 mb-4">
+                          <div className="p-2 bg-[#00482B]/10 rounded-lg">
+                            <MessageSquare className="w-5 h-5 text-[#00482B]" />
                           </div>
-                          <p className="font-medium">
-                            {formatarData(manifestacao.datacriacao)}
+                          <span className="font-semibold text-gray-900">Mensagem</span>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                          <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+                            {manifestacao.descricao || 'Não informada'}
                           </p>
                         </div>
+                      </div>
 
-                        {!manifestacao.anonima && (
-                          <>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <div className="flex items-center gap-2 text-gray-600 mb-2">
-                                <User className="w-4 h-4" />
-                                <span className="text-sm font-medium">Solicitante</span>
-                              </div>
-                              <p className="font-medium">{manifestacao.nome || 'Não informado'}</p>
-                            </div>
-
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <div className="flex items-center gap-2 text-gray-600 mb-2">
-                                <Mail className="w-4 h-4" />
-                                <span className="text-sm font-medium">Email</span>
-                              </div>
-                              <p className="font-medium">{manifestacao.email || 'Não informado'}</p>
-                            </div>
-
-                            {manifestacao.telefone && (
-                              <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="flex items-center gap-2 text-gray-600 mb-2">
-                                  <Phone className="w-4 h-4" />
-                                  <span className="text-sm font-medium">Telefone</span>
-                                </div>
-                                <p className="font-medium">{manifestacao.telefone}</p>
-                              </div>
-                            )}
-                          </>
-                        )}
-
-                        {manifestacao.anonima && (
-                          <div className="bg-gray-50 rounded-lg p-4">
-                            <div className="flex items-center gap-2 text-gray-600 mb-2">
-                              <User className="w-4 h-4" />
-                              <span className="text-sm font-medium">Tipo de Manifestação</span>
-                            </div>
-                            <p className="font-medium text-[#00703C]">ANÔNIMA</p>
-                          </div>
-                        )}
+                      {/* Botão Nova Consulta */}
+                      <div className="pt-6 flex justify-end">
+                        <Button
+                          onClick={handleNovaConsulta}
+                          variant="outline"
+                          className="rounded-full px-8 py-6 border-2 hover:bg-[#00482B] hover:text-white hover:border-[#00482B] transition-all group"
+                        >
+                          <Search className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                          Nova Consulta
+                          <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </Button>
                       </div>
                     </div>
+                  </motion.div>
+                )}
 
-                    {/* Mensagem/Descrição */}
-                    <div className="mt-6">
-                      <div className="flex items-center gap-2 text-gray-600 mb-3">
-                        <MessageSquare className="w-5 h-5" />
-                        <span className="font-medium">Mensagem</span>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-6">
-                        <p className="text-gray-700 whitespace-pre-line">
-                          {manifestacao.descricao || 'Não informada'}
-                        </p>
-                      </div>
+                {/* Instruções quando não há consulta */}
+                {!manifestacao && !error && (
+                  <motion.div
+                    key="instrucoes"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="mt-12 text-center py-12"
+                  >
+                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-lg">
+                      <Search className="w-12 h-12 text-gray-400" />
                     </div>
-
-                    {/* Botão Nova Consulta */}
-                    <div className="pt-6 border-t border-gray-200">
-                      <Button
-                        onClick={handleNovaConsulta}
-                        variant="outline"
-                        className="w-full md:w-auto rounded-full"
+                    <h3 className="text-2xl font-bold text-gray-800 mb-3">
+                      Digite um protocolo para consultar
+                    </h3>
+                    <p className="text-gray-600 text-lg max-w-lg mx-auto">
+                      Informe o número do protocolo recebido por e-mail para acompanhar o andamento da sua manifestação
+                    </p>
+                    
+                    <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                      <Button 
+                        asChild
+                        className="bg-gradient-to-r from-[#00482B] to-[#00703C] text-white rounded-full px-8 py-6 shadow-lg hover:shadow-xl"
                       >
-                        <Search className="w-4 h-4 mr-2" />
-                        Nova Consulta
+                        <Link to="/ouvidoria/nova">
+                          <FileText className="w-4 h-4 mr-2" />
+                          Fazer uma manifestação
+                        </Link>
+                      </Button>
+                      
+                      <Button 
+                        asChild
+                        variant="outline"
+                        className="rounded-full px-8 py-6 border-2"
+                      >
+                        <Link to="/ouvidoria/sobre">
+                          Conhecer a Ouvidoria
+                        </Link>
                       </Button>
                     </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Instruções quando não há consulta */}
-              {!manifestacao && !error && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-8 text-center py-8"
-                >
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    Digite um protocolo para consultar
-                  </h3>
-                  <p className="text-gray-500 text-sm">
-                    Informe o número do protocolo recebido por email<br />
-                    para acompanhar o andamento da sua manifestação
-                  </p>
-                </motion.div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* FOOTER - IDÊNTICO AO SEU SITE */}
-      <footer className="bg-[#00482B] text-white py-10 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm">
-          © {new Date().getFullYear()} Sistema de Ouvidoria
+      {/* FOOTER PREMIUM */}
+      <footer className="bg-gradient-to-r from-[#00482B] to-[#00703C] text-white py-12 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-4">
+              <img src={LOGO_URL} alt="Logo" className="h-10 brightness-0 invert" />
+              <span className="text-sm text-white/80">
+                © {new Date().getFullYear()} - Sistema de Ouvidoria
+              </span>
+            </div>
+            
+            <div className="flex gap-8 text-sm">
+              <Link to="/ouvidoria" className="text-white/80 hover:text-white transition-colors">
+                Início
+              </Link>
+              <Link to="/ouvidoria/sobre" className="text-white/80 hover:text-white transition-colors">
+                Sobre
+              </Link>
+              <Link to="/ouvidoria/consultar" className="text-white font-medium">
+                Consultar
+              </Link>
+              <Link to="/ouvidoria/admin" className="text-white/80 hover:text-white transition-colors">
+                Admin
+              </Link>
+            </div>
+          </div>
+          
+          <div className="mt-6 pt-6 border-t border-white/20 text-center md:text-left">
+            <p className="text-xs text-white/60">
+              Canal oficial de comunicação. Todas as manifestações são tratadas com sigilo e transparência.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

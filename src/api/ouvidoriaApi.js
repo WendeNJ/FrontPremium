@@ -123,7 +123,7 @@ export const cardMuralAPI = {
 };
 
 // ============================================
-// 📌 NOTÍCIAS
+// 📌 NOTÍCIAS 🔥 CONECTADO!
 // ============================================
 export const noticiasAPI = {
   list: () => api.get("/api/noticias").then(res => res.data),
@@ -142,7 +142,7 @@ export const configuracaoAPI = {
 };
 
 // ============================================
-// 📌 ESTATÍSTICAS (NOVO! 📊)
+// 📌 ESTATÍSTICAS
 // ============================================
 export const estatisticasAPI = {
   get: () => api.get("/api/estatisticas").then(res => res.data),

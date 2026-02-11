@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { Menu, X } from 'lucide-react' // Adicionado para o Sobre
 
 import OuvidoriaHome from '../ouvidoria'
 import NovaManifestacao from '../ouvidoria/NovaManifestacao'
