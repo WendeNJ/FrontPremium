@@ -613,9 +613,7 @@ export default function NovaManifestacao() {
         </motion.div>
       </div>
 
-      // ============================================
-      // 📌 FOOTER - NOVA MANIFESTAÇÃO
-      // ============================================
+     
       <footer className="bg-[#00482B] text-white/90 py-10 mt-auto">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
