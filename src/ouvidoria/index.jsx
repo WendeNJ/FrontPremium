@@ -14,7 +14,7 @@ import {
     MapPin
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import DashboardStats from '@/ouvidoria/DashboardStats.jsx'
+import DashboardStats from '@/ouvidoria/Dashboardstats'
 
 const manifestationTypes = [
     {
