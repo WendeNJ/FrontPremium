@@ -7,8 +7,8 @@ export default function ContactSection() {
     const { isDark } = useTheme();
     
     const contacts = [
-        { icon: Phone, title: 'Central de Atendimento', lines: ['Entre em contato com nossa', 'equipe especializada', '(86) 8825-0227'] },
-        { icon: Mail, title: 'Email', lines: ['Envie sua mensagem para', 'nosso time', ' rh@premiumteresina.com.br'] },
+        { icon: Phone, title: 'Central de Atendimento', lines: ['Entre em contato com nossa', 'equipe especializada', '(86) 3220-3435'] },
+        { icon: Mail, title: 'Email', lines: ['Envie sua mensagem para', 'nosso time', 'contato@premiumteresina.com.br'] },
     ];
 
     return (
@@ -22,7 +22,6 @@ export default function ContactSection() {
                     <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Entre em Contato</h2>
                     <p className={`text-lg max-w-xl mx-auto ${isDark ? 'text-white/50' : 'text-gray-500'}`}>Estamos à disposição para atendê-lo</p>
                 </motion.div>
-
                 <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
                     {contacts.map((contact, index) => (
                         <motion.div key={contact.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.15 }} className={`group p-8 rounded-3xl border hover:border-green-500/30 transition-all duration-500 ${isDark ? 'bg-[#111111] border-white/5' : 'bg-gray-50 border-gray-200'}`}>
