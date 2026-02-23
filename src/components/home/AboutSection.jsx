@@ -1,16 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Award, TrendingUp, Users } from 'lucide-react';
+import { FileText, Award, TrendingUp, Users, ArrowRight } from 'lucide-react';
 import { useTheme } from '../../Layout';
+import { Link } from 'react-router-dom';
 
 export default function AboutSection() {
     const { isDark } = useTheme();
     
     const stats = [
-        { icon: Award, number: '20+', label: 'Anos de experiência', desc: 'Tradição no mercado' },
-        { icon: FileText, number: '51+', label: 'Cidades atendidas', desc: 'Cobertura regional' },
-        { icon: Users, number: '100%', label: 'Satisfação do cliente', desc: 'Qualidade garantida' },
-        { icon: TrendingUp, number: 'Top', label: 'Marcas do mercado', desc: 'Portfólio premium' },
+        { icon: Award,      number: '20+',  label: 'Anos de experiência', desc: 'Tradição no mercado' },
+        { icon: FileText,   number: '51+',  label: 'Cidades atendidas',   desc: 'Cobertura regional' },
+        { icon: Users,      number: '100%', label: 'Satisfação do cliente', desc: 'Qualidade garantida' },
+        { icon: TrendingUp, number: 'Top',  label: 'Marcas do mercado',   desc: 'Portfólio premium' },
     ];
 
     return (
@@ -48,12 +49,34 @@ export default function AboutSection() {
                                     <motion.div initial={{ width: 0 }} whileInView={{ width: '100%' }} viewport={{ once: true }} transition={{ duration: 1.5, delay: 0.3 }} className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full" />
                                 </div>
                             </div>
+
+                            {/* ── Ouvidoria CTA com desconto ── */}
+                            <div className={`mt-6 p-4 rounded-2xl border ${isDark ? 'border-green-500/20 bg-green-500/5' : 'border-green-200 bg-green-50'}`}>
+                                <div className="flex items-center justify-between gap-4 flex-wrap">
+                                    <div>
+                                        <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-green-400' : 'text-green-700'}`}>
+                                            🎙️ Canal de Ouvidoria
+                                        </p>
+                                        <p className={`text-sm ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
+                                            Sugestões, reclamações e elogios
+                                        </p>
+                                    </div>
+                                    <Link
+                                        to="/ouvidoria/sobre"
+                                        className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-black text-sm font-semibold px-4 py-2 rounded-full transition-all shrink-0 group"
+                                    >
+                                        Acessar
+                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
 
                     <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="grid grid-cols-2 gap-4">
                         {stats.map((stat, index) => (
-                            <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }} className={`group p-6 rounded-2xl border hover:border-green-500/30 transition-all duration-300 ${isDark ? 'bg-[#111111] border-white/5 hover:bg-[#151515]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
+                            <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}
+                                className={`group p-6 rounded-2xl border hover:border-green-500/30 transition-all duration-300 ${isDark ? 'bg-[#111111] border-white/5 hover:bg-[#151515]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
                                 <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4 group-hover:bg-green-500/20 transition-colors">
                                     <stat.icon className="w-6 h-6 text-green-500" />
                                 </div>
