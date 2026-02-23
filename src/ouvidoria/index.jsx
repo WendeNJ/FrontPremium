@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+/*import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import {
@@ -133,7 +133,7 @@ export default function Sobre() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* HEADER */}
-      <header className="bg-[#0A0A0A] sticky top-0 z-50">
+   /*   <header className="bg-[#0A0A0A] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
           <Link to="/ouvidoria" className="flex items-center gap-4">
             <img src={LOGO_URL} alt="Logo" className="h-14" />
@@ -188,7 +188,7 @@ export default function Sobre() {
 
       <div className="flex-1">
         {/* HERO */}
-        <section className="relative bg-gradient-to-br from-[#00482B] to-[#00703C] text-white overflow-hidden">
+      /*  <section className="relative bg-gradient-to-br from-[#00482B] to-[#00703C] text-white overflow-hidden">
           <div className="absolute inset-0 bg-black/20"></div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
@@ -237,7 +237,7 @@ export default function Sobre() {
         </section>
 
         {/* DASHBOARD DE ESTATÍSTICAS */}
-        <section className="py-16 bg-white">
+     /*   <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -254,7 +254,7 @@ export default function Sobre() {
             </motion.div>
 
             {/* 2 cards em cima */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          /*    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
               {statCards.slice(0, 2).map((stat, index) => (
                 <motion.div
                   key={stat.label}
@@ -279,7 +279,7 @@ export default function Sobre() {
             </div>
 
             {/* 2 cards em baixo */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+         /*     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {statCards.slice(2, 4).map((stat, index) => (
                 <motion.div
                   key={stat.label}
@@ -306,7 +306,7 @@ export default function Sobre() {
         </section>
 
         {/* SOBRE A PREMIUM */}
-        <section className="py-20 bg-gray-50">
+      /*    <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <motion.div
@@ -355,7 +355,7 @@ export default function Sobre() {
               </motion.div>
 
               {/* Info cards laterais */}
-              <motion.div
+          /*      <motion.div
                 initial={{ opacity: 0, x: 30 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -390,7 +390,7 @@ export default function Sobre() {
         </section>
 
         {/* COMPROMISSOS */}
-        <section className="py-20 bg-white">
+       /*   <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -463,7 +463,7 @@ export default function Sobre() {
         </section>
 
         {/* FLUXO */}
-        <section className="py-20 bg-gray-50">
+       /*   <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Como funciona?</h2>
@@ -493,7 +493,7 @@ export default function Sobre() {
         </section>
 
         {/* CTA FINAL */}
-        <section className="py-20 bg-gradient-to-br from-[#00482B] to-[#00703C]">
+     /*     <section className="py-20 bg-gradient-to-br from-[#00482B] to-[#00703C]">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
               Pronto para falar com a gente?
@@ -526,7 +526,7 @@ export default function Sobre() {
       </div>
 
       {/* FOOTER */}
-      <footer className="bg-gray-900 text-white/80 py-12">
+     /*   <footer className="bg-gray-900 text-white/80 py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
             <div className="flex items-center gap-4">
