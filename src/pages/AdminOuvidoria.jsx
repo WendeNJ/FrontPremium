@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { base44 } from '@/api/base44Client'
+import { usersAPI } from '@/api/ouvidoriaApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -64,17 +65,9 @@ export default function AdminOuvidoria() {
   useEffect(() => {
     const checkIfLoggedIn = async () => {
       try {
-        const res = await fetch('http://localhost:8081/users/test', { 
-          credentials: 'include',
-          headers: { 'Accept': 'application/json' }
-        })
-        if (res.ok) {
-          console.log('✅ Usuário já está logado')
-          setIsAuthenticated(true)
-        } else {
-          console.log('ℹ️ Usuário não está logado')
-          setIsAuthenticated(false)
-        }
+        await usersAPI.testAuth()
+        console.log('✅ Usuário já está logado')
+        setIsAuthenticated(true)
       } catch (error) {
         console.log('ℹ️ Não foi possível verificar login:', error)
         setIsAuthenticated(false)
@@ -113,21 +106,10 @@ export default function AdminOuvidoria() {
     setLoginLoading(true)
 
     try {
-      const loginRes = await fetch('http://localhost:8081/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email: loginUser, password: loginPass }),
-      })
-
-      if (!loginRes.ok) {
-        const errorText = await loginRes.text()
-        throw new Error('Usuário ou senha inválidos')
-      }
-
+      await usersAPI.login({ email: loginUser, password: loginPass })
       setIsAuthenticated(true)
     } catch (err) {
-      setLoginError(err.message || 'Erro ao autenticar')
+      setLoginError(err.response?.data?.message || 'Usuário ou senha inválidos')
     } finally {
       setLoginLoading(false)
     }
@@ -135,14 +117,11 @@ export default function AdminOuvidoria() {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:8081/users/logout', { 
-        method: 'POST', 
-        credentials: 'include' 
-      })
+      await usersAPI.logout()
       setIsAuthenticated(false)
       setLoginUser('')
       setLoginPass('')
-      navigate('/ouvidoria') // 🔥 Vai para a HOME
+      navigate('/ouvidoria')
     } catch (error) {
       console.error('Erro no logout:', error)
     }
@@ -220,7 +199,7 @@ export default function AdminOuvidoria() {
   }
 
   // ============================================
-  // 📌 TELA DE LOGIN - VERSÃO PREMIUM
+  // 📌 TELA DE LOGIN
   // ============================================
   if (!isAuthenticated) {
     return (
@@ -344,11 +323,11 @@ export default function AdminOuvidoria() {
   }
 
   // ============================================
-  // 📌 PAINEL ADMINISTRATIVO - VERSÃO PREMIUM
+  // 📌 PAINEL ADMINISTRATIVO
   // ============================================
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* HEADER PREMIUM */}
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* HEADER */}
       <header className="bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -397,7 +376,6 @@ export default function AdminOuvidoria() {
           >
             <div className="flex flex-col gap-3 py-3">
               <Link to="/ouvidoria" className="text-white/70 hover:text-white py-2">Home</Link>
-              <Link to="/ouvidoria" className="text-white/70 hover:text-white py-2">Ouvidoria</Link>
               <Link to="/ouvidoria/consultar" className="text-white/70 hover:text-white py-2">Consultar</Link>
               <Button 
                 onClick={handleLogout} 
@@ -486,76 +464,34 @@ export default function AdminOuvidoria() {
               </Button>
             </div>
 
-            <AnimatePresence>
-              {showFilters && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="space-y-4"
-                >
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input 
-                          type="text" 
-                          placeholder="Buscar por protocolo, nome ou email..." 
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none transition-all" 
-                          value={busca} 
-                          onChange={(e) => setBusca(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="md:w-64">
-                      <select 
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer"
-                        value={filtroStatus} 
-                        onChange={(e) => setFiltroStatus(e.target.value)}
-                      >
-                        <option value="TODAS">Todos os Status</option>
-                        {STATUS_OPTIONS.map((status) => (
-                          <option key={status.value} value={status.value}>
-                            {status.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {!showFilters && (
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input 
-                      type="text" 
-                      placeholder="Buscar por protocolo, nome ou email..." 
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none transition-all" 
-                      value={busca} 
-                      onChange={(e) => setBusca(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="md:w-64">
-                  <select 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer"
-                    value={filtroStatus} 
-                    onChange={(e) => setFiltroStatus(e.target.value)}
-                  >
-                    <option value="TODAS">Todos os Status</option>
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status.value} value={status.value}>
-                        {status.label}
-                      </option>
-                    ))}
-                  </select>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar por protocolo, nome ou email..." 
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none transition-all" 
+                    value={busca} 
+                    onChange={(e) => setBusca(e.target.value)}
+                  />
                 </div>
               </div>
-            )}
+              <div className="md:w-64">
+                <select 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer"
+                  value={filtroStatus} 
+                  onChange={(e) => setFiltroStatus(e.target.value)}
+                >
+                  <option value="TODAS">Todos os Status</option>
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </motion.div>
 
           {/* LISTA DE MANIFESTAÇÕES */}
@@ -672,7 +608,7 @@ export default function AdminOuvidoria() {
         </div>
       </div>
 
-      {/* MODAL DE EDIÇÃO - PREMIUM */}
+      {/* MODAL DE EDIÇÃO */}
       <AnimatePresence>
         {modalAberto && manifestacaoSelecionada && (
           <motion.div 
