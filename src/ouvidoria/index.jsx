@@ -2,26 +2,9 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import {
-  ArrowLeft,
-  Shield,
-  Clock,
-  Mail,
-  Users,
-  Heart,
-  Award,
-  TrendingUp,
-  MessageSquare,
-  Menu,
-  X,
-  Lock,
-  Eye,
-  CheckCircle,
-  FileText,
-  MapPin,
-  Phone,
-  AlertCircle,
-  RefreshCw,
-  XCircle
+  ArrowLeft, Shield, Clock, Mail, Users, Heart, Award,
+  TrendingUp, Menu, X, Lock, Eye, CheckCircle, FileText,
+  MapPin, AlertCircle, RefreshCw,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { base44 } from '@/api/base44Client'
@@ -30,26 +13,20 @@ const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396
 
 export default function Sobre() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [stats, setStats] = useState({
-    total: 0,
-    abertas: 0,
-    emAnalise: 0,
-    respondidas: 0,
-    encerradas: 0,
-  })
+  const [stats, setStats] = useState({ total: 0, abertas: 0, emAnalise: 0, respondidas: 0, encerradas: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function carregarStats() {
       try {
         const data = await base44.entities.Manifestacoes.list()
-        const manifestacoes = data || []
+        const m = data || []
         setStats({
-          total: manifestacoes.length,
-          abertas: manifestacoes.filter(m => m.status === 'ABERTA').length,
-          emAnalise: manifestacoes.filter(m => m.status === 'EM_ANALISE').length,
-          respondidas: manifestacoes.filter(m => m.status === 'RESPONDIDA').length,
-          encerradas: manifestacoes.filter(m => m.status === 'ENCERRADA').length,
+          total: m.length,
+          abertas: m.filter(x => x.status === 'ABERTA').length,
+          emAnalise: m.filter(x => x.status === 'EM_ANALISE').length,
+          respondidas: m.filter(x => x.status === 'RESPONDIDA').length,
+          encerradas: m.filter(x => x.status === 'ENCERRADA').length,
         })
       } catch (err) {
         console.error('Erro ao carregar stats:', err)
@@ -61,93 +38,38 @@ export default function Sobre() {
   }, [])
 
   const statCards = [
-    {
-      label: 'Total de Manifestações',
-      value: stats.total,
-      icon: FileText,
-      color: 'text-gray-700',
-      bg: 'bg-gray-50',
-      border: 'border-gray-200',
-      desc: 'registradas no sistema'
-    },
-    {
-      label: 'Abertas',
-      value: stats.abertas,
-      icon: AlertCircle,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-      border: 'border-blue-100',
-      desc: 'aguardando análise'
-    },
-    {
-      label: 'Em Análise',
-      value: stats.emAnalise,
-      icon: RefreshCw,
-      color: 'text-yellow-600',
-      bg: 'bg-yellow-50',
-      border: 'border-yellow-100',
-      desc: 'em andamento'
-    },
-    {
-      label: 'Respondidas',
-      value: stats.respondidas,
-      icon: CheckCircle,
-      color: 'text-green-600',
-      bg: 'bg-green-50',
-      border: 'border-green-100',
-      desc: 'finalizadas com sucesso'
-    },
+    { label: 'Total de Manifestações', value: stats.total,     icon: FileText,    color: 'text-gray-700',   bg: 'bg-gray-50',   border: 'border-gray-200',  desc: 'registradas no sistema' },
+    { label: 'Abertas',               value: stats.abertas,   icon: AlertCircle, color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100',  desc: 'aguardando análise' },
+    { label: 'Em Análise',            value: stats.emAnalise, icon: RefreshCw,   color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100', desc: 'em andamento' },
+    { label: 'Respondidas',           value: stats.respondidas,icon: CheckCircle,color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-100', desc: 'finalizadas com sucesso' },
   ]
 
   const compromissos = [
-    {
-      icon: Lock,
-      title: 'Sigilo Absoluto',
-      description: 'Garantimos o anonimato total quando solicitado. Sua identidade é protegida em todas as etapas do processo.',
-      color: 'text-purple-600',
-      bg: 'bg-purple-50'
-    },
-    {
-      icon: Clock,
-      title: 'Resposta Ágil',
-      description: 'Compromisso de resposta em até 5 dias úteis. Acompanhe o andamento pelo protocolo a qualquer momento.',
-      color: 'text-blue-600',
-      bg: 'bg-blue-50'
-    },
-    {
-      icon: Eye,
-      title: 'Transparência',
-      description: 'Acompanhamento completo da sua manifestação. Você sabe exatamente onde e como está sendo tratada.',
-      color: 'text-green-600',
-      bg: 'bg-green-50'
-    },
-    {
-      icon: Heart,
-      title: 'Atendimento Humanizado',
-      description: 'Cada manifestação é única e tratada com respeito, empatia e atenção individual.',
-      color: 'text-red-600',
-      bg: 'bg-red-50'
-    }
+    { icon: Lock,  title: 'Sigilo Absoluto',       description: 'Garantimos o anonimato total quando solicitado. Sua identidade é protegida em todas as etapas do processo.', color: 'text-purple-600', bg: 'bg-purple-50' },
+    { icon: Clock, title: 'Resposta Ágil',          description: 'Compromisso de resposta em até 5 dias úteis. Acompanhe o andamento pelo protocolo a qualquer momento.',      color: 'text-blue-600',   bg: 'bg-blue-50' },
+    { icon: Eye,   title: 'Transparência',          description: 'Acompanhamento completo da sua manifestação. Você sabe exatamente onde e como está sendo tratada.',         color: 'text-green-600',  bg: 'bg-green-50' },
+    { icon: Heart, title: 'Atendimento Humanizado', description: 'Cada manifestação é única e tratada com respeito, empatia e atenção individual.',                           color: 'text-red-600',    bg: 'bg-red-50' },
   ]
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* HEADER */}
+
+      {/* ── HEADER ───────────────────────────────────────────────── */}
       <header className="bg-[#0A0A0A] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-          <Link to="/ouvidoria" className="flex items-center gap-4">
+
+          {/* Logo → home do site principal */}
+          <Link to="/" className="flex items-center gap-4">
             <img src={LOGO_URL} alt="Logo" className="h-14" />
             <span className="text-white font-bold text-lg tracking-wide hidden sm:block">
               SISTEMA DE OUVIDORIA
             </span>
           </Link>
 
+          {/* Nav desktop — sem SOBRE, INÍCIO ativo */}
           <nav className="hidden md:flex gap-8">
-            <Link to="/ouvidoria" className="text-white/70 hover:text-white transition-colors">
-              INÍCIO
-            </Link>
             <Link to="/ouvidoria/sobre" className="text-white font-medium border-b-2 border-white">
-              SOBRE
+              INÍCIO
             </Link>
             <Link to="/ouvidoria/consultar" className="text-white/70 hover:text-white transition-colors">
               CONSULTAR
@@ -163,10 +85,7 @@ export default function Sobre() {
             </Button>
           </div>
 
-          <button
-            className="md:hidden text-white p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
+          <button className="md:hidden text-white p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
@@ -174,10 +93,9 @@ export default function Sobre() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-[#0A0A0A] px-4 pb-4 border-t border-gray-800">
             <div className="flex flex-col gap-3 py-3">
-              <Link to="/ouvidoria" className="text-white py-2">Início</Link>
-              <Link to="/ouvidoria/sobre" className="text-white py-2">Sobre</Link>
+              <Link to="/ouvidoria/sobre"    className="text-white font-medium py-2">Início</Link>
               <Link to="/ouvidoria/consultar" className="text-white/70 py-2">Consultar</Link>
-              <Link to="/ouvidoria/admin" className="text-white/50 py-2">Admin</Link>
+              <Link to="/ouvidoria/admin"    className="text-white/50 py-2">Admin</Link>
               <Button asChild className="bg-white text-[#00482B] rounded-full mt-2">
                 <Link to="/ouvidoria/nova">Fazer Manifestação</Link>
               </Button>
@@ -187,19 +105,16 @@ export default function Sobre() {
       </header>
 
       <div className="flex-1">
-        {/* HERO */}
+
+        {/* ── HERO ─────────────────────────────────────────────────── */}
         <section className="relative bg-gradient-to-br from-[#00482B] to-[#00703C] text-white overflow-hidden">
-          <div className="absolute inset-0 bg-black/20"></div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
 
           <div className="relative max-w-7xl mx-auto px-4 py-20 md:py-28">
             <div className="max-w-3xl">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <div className="flex items-center gap-2 text-white/80 mb-4">
                   <Shield className="w-5 h-5" />
                   <span className="text-sm font-medium uppercase tracking-wider">Canal Oficial</span>
@@ -216,19 +131,13 @@ export default function Sobre() {
                 </p>
 
                 <div className="flex gap-4 flex-wrap">
-                  <Button
-                    asChild
-                    className="bg-white text-[#00482B] hover:bg-gray-100 rounded-full px-8 py-6 text-base font-semibold"
-                  >
+                  <Button asChild className="bg-white text-[#00482B] hover:bg-gray-100 rounded-full px-8 py-6 text-base font-semibold">
                     <Link to="/ouvidoria/nova">Falar com a Ouvidoria</Link>
                   </Button>
 
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="border-2 border-white text-white hover:bg-white/10 rounded-full px-8 py-6 text-base font-semibold"
-                  >
-                    <Link to="/ouvidoria/consultar">Acompanhar Protocolo</Link>
+                  {/* Consultar Protocolo — branco sólido para ser legível no fundo verde */}
+                  <Button asChild className="bg-white/15 border-2 border-white text-white hover:bg-white hover:text-[#00482B] rounded-full px-8 py-6 text-base font-semibold transition-all">
+                    <Link to="/ouvidoria/consultar">Consultar Protocolo</Link>
                   </Button>
                 </div>
               </motion.div>
@@ -236,41 +145,23 @@ export default function Sobre() {
           </div>
         </section>
 
-        {/* DASHBOARD DE ESTATÍSTICAS */}
+        {/* ── ESTATÍSTICAS ─────────────────────────────────────────── */}
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <span className="text-[#00482B] text-sm font-semibold tracking-widest uppercase mb-3 block">
-                Transparência em Números
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-                Estatísticas da Ouvidoria
-              </h2>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
+              <span className="text-[#00482B] text-sm font-semibold tracking-widest uppercase mb-3 block">Transparência em Números</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Estatísticas da Ouvidoria</h2>
             </motion.div>
 
-            {/* 2 cards em cima */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-              {statCards.slice(0, 2).map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`${stat.bg} border ${stat.border} rounded-2xl p-8 flex items-center gap-6 hover:shadow-lg transition-all`}
-                >
-                  <div className={`w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0`}>
+              {statCards.slice(0, 2).map((stat, i) => (
+                <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                  className={`${stat.bg} border ${stat.border} rounded-2xl p-8 flex items-center gap-6 hover:shadow-lg transition-all`}>
+                  <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                     <stat.icon className={`w-8 h-8 ${stat.color}`} />
                   </div>
                   <div>
-                    <p className={`text-5xl font-bold ${stat.color} mb-1`}>
-                      {loading ? '—' : stat.value}
-                    </p>
+                    <p className={`text-5xl font-bold ${stat.color} mb-1`}>{loading ? '—' : stat.value}</p>
                     <p className="font-semibold text-gray-900">{stat.label}</p>
                     <p className="text-sm text-gray-500">{stat.desc}</p>
                   </div>
@@ -278,24 +169,15 @@ export default function Sobre() {
               ))}
             </div>
 
-            {/* 2 cards em baixo */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {statCards.slice(2, 4).map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 + 0.2 }}
-                  className={`${stat.bg} border ${stat.border} rounded-2xl p-8 flex items-center gap-6 hover:shadow-lg transition-all`}
-                >
-                  <div className={`w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0`}>
+              {statCards.slice(2, 4).map((stat, i) => (
+                <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 + 0.2 }}
+                  className={`${stat.bg} border ${stat.border} rounded-2xl p-8 flex items-center gap-6 hover:shadow-lg transition-all`}>
+                  <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                     <stat.icon className={`w-8 h-8 ${stat.color}`} />
                   </div>
                   <div>
-                    <p className={`text-5xl font-bold ${stat.color} mb-1`}>
-                      {loading ? '—' : stat.value}
-                    </p>
+                    <p className={`text-5xl font-bold ${stat.color} mb-1`}>{loading ? '—' : stat.value}</p>
                     <p className="font-semibold text-gray-900">{stat.label}</p>
                     <p className="text-sm text-gray-500">{stat.desc}</p>
                   </div>
@@ -305,23 +187,14 @@ export default function Sobre() {
           </div>
         </section>
 
-        {/* SOBRE A PREMIUM */}
+        {/* ── SOBRE A PREMIUM ──────────────────────────────────────── */}
         <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              >
-                <span className="text-[#00482B] text-sm font-semibold tracking-widest uppercase mb-4 block">
-                  Sobre a Premium
-                </span>
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                  Distribuidora Premium Bebidas
-                </h2>
-                <div className="w-20 h-1 bg-[#00482B] rounded-full mb-8"></div>
+              <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+                <span className="text-[#00482B] text-sm font-semibold tracking-widest uppercase mb-4 block">Sobre a Premium</span>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Distribuidora Premium Bebidas</h2>
+                <div className="w-20 h-1 bg-[#00482B] rounded-full mb-8" />
 
                 <div className="space-y-4 text-gray-600 leading-relaxed">
                   <p className="text-lg">
@@ -335,8 +208,7 @@ export default function Sobre() {
                   </p>
                   <p className="text-lg">
                     Iniciamos nossos trabalhos em <span className="font-semibold text-gray-900">2004</span>,
-                    de forma sólida e consciente, acreditando na marca e na qualidade dos produtos
-                    e serviços oferecidos.
+                    de forma sólida e consciente, acreditando na marca e na qualidade dos produtos e serviços oferecidos.
                   </p>
                 </div>
 
@@ -346,36 +218,21 @@ export default function Sobre() {
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Canal oficial da Ouvidoria</p>
                       <p className="font-medium text-gray-900">contato@premiumteresina.com.br</p>
-                      <p className="text-sm text-gray-600 mt-2">
-                        Respondemos todas as manifestações em até 5 dias úteis
-                      </p>
+                      <p className="text-sm text-gray-600 mt-2">Respondemos todas as manifestações em até 5 dias úteis</p>
                     </div>
                   </div>
                 </div>
               </motion.div>
 
-              {/* Info cards laterais */}
-              <motion.div
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-                className="grid grid-cols-2 gap-4"
-              >
+              <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="grid grid-cols-2 gap-4">
                 {[
-                  { icon: MapPin, number: '51+', label: 'Cidades atendidas', desc: 'Juazeiro, Iguatu, Teresina e região' },
-                  { icon: Award, number: '20+', label: 'Anos de história', desc: 'Desde 2004 construindo confiança' },
-                  { icon: Users, number: '100%', label: 'Sigilo garantido', desc: 'Compromisso com sua privacidade' },
-                  { icon: TrendingUp, number: '48+', label: 'Marcas premium', desc: 'Portfólio completo e diversificado' },
-                ].map((stat, index) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                    className="group p-6 rounded-2xl border border-gray-200 hover:border-[#00482B]/30 hover:shadow-lg transition-all bg-white"
-                  >
+                  { icon: MapPin,     number: '51+',  label: 'Cidades atendidas', desc: 'Juazeiro, Iguatu, Teresina e região' },
+                  { icon: Award,      number: '20+',  label: 'Anos de história',  desc: 'Desde 2004 construindo confiança' },
+                  { icon: Users,      number: '100%', label: 'Sigilo garantido',  desc: 'Compromisso com sua privacidade' },
+                  { icon: TrendingUp, number: '48+',  label: 'Marcas premium',    desc: 'Portfólio completo e diversificado' },
+                ].map((stat, i) => (
+                  <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                    className="group p-6 rounded-2xl border border-gray-200 hover:border-[#00482B]/30 hover:shadow-lg transition-all bg-white">
                     <div className="w-12 h-12 rounded-xl bg-[#00482B]/10 flex items-center justify-center mb-4 group-hover:bg-[#00482B]/20 transition-colors">
                       <stat.icon className="w-6 h-6 text-[#00482B]" />
                     </div>
@@ -389,36 +246,19 @@ export default function Sobre() {
           </div>
         </section>
 
-        {/* COMPROMISSOS */}
+        {/* ── COMPROMISSOS ─────────────────────────────────────────── */}
         <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center max-w-3xl mx-auto mb-16"
-            >
-              <span className="text-[#00482B] text-sm font-semibold tracking-widest uppercase mb-4 block">
-                Compromisso com Você
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Como tratamos sua manifestação
-              </h2>
-              <p className="text-lg text-gray-600">
-                Sua opinião é essencial para melhorarmos nossos produtos e serviços.
-              </p>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-[#00482B] text-sm font-semibold tracking-widest uppercase mb-4 block">Compromisso com Você</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Como tratamos sua manifestação</h2>
+              <p className="text-lg text-gray-600">Sua opinião é essencial para melhorarmos nossos produtos e serviços.</p>
             </motion.div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {compromissos.map((item, index) => (
-                <motion.div
-                  key={item.title}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white p-8 rounded-xl border border-gray-200 hover:shadow-xl transition-all"
-                >
+              {compromissos.map((item, i) => (
+                <motion.div key={item.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                  className="bg-white p-8 rounded-xl border border-gray-200 hover:shadow-xl transition-all">
                   <div className={`w-14 h-14 ${item.bg} rounded-xl flex items-center justify-center mb-5`}>
                     <item.icon className={`w-7 h-7 ${item.color}`} />
                   </div>
@@ -428,41 +268,28 @@ export default function Sobre() {
               ))}
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.4 }}
-              className="mt-16 bg-gray-50 p-8 rounded-2xl border border-gray-200"
-            >
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.4 }}
+              className="mt-16 bg-gray-50 p-8 rounded-2xl border border-gray-200">
               <div className="grid md:grid-cols-3 gap-8">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">Anonimato Garantido</h4>
-                    <p className="text-sm text-gray-600">Você escolhe se quer se identificar ou permanecer anônimo.</p>
+                {[
+                  { title: 'Anonimato Garantido',   text: 'Você escolhe se quer se identificar ou permanecer anônimo.' },
+                  { title: 'Acompanhamento Total',  text: 'Com seu protocolo, consulte o andamento 24 horas por dia.' },
+                  { title: 'Resolução Efetiva',     text: 'Cada caso é analisado individualmente e direcionado para a área responsável.' },
+                ].map(item => (
+                  <div key={item.title} className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
+                      <p className="text-sm text-gray-600">{item.text}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">Acompanhamento Total</h4>
-                    <p className="text-sm text-gray-600">Com seu protocolo, consulte o andamento 24 horas por dia.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">Resolução Efetiva</h4>
-                    <p className="text-sm text-gray-600">Cada caso é analisado individualmente e direcionado para a área responsável.</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* FLUXO */}
+        {/* ── FLUXO ────────────────────────────────────────────────── */}
         <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center max-w-3xl mx-auto mb-16">
@@ -472,16 +299,14 @@ export default function Sobre() {
 
             <div className="grid md:grid-cols-4 gap-4">
               {[
-                { n: 1, title: 'Registre', desc: 'Preencha o formulário com sua manifestação' },
+                { n: 1, title: 'Registre',  desc: 'Preencha o formulário com sua manifestação' },
                 { n: 2, title: 'Protocolo', desc: 'Receba um código único para acompanhamento' },
-                { n: 3, title: 'Análise', desc: 'Nossa equipe avalia e direciona sua demanda' },
-                { n: 4, title: 'Resposta', desc: 'Retorno em até 5 dias úteis' },
+                { n: 3, title: 'Análise',   desc: 'Nossa equipe avalia e direciona sua demanda' },
+                { n: 4, title: 'Resposta',  desc: 'Retorno em até 5 dias úteis' },
               ].map((step, i) => (
                 <div key={step.n} className="relative">
                   <div className="bg-white border border-gray-200 p-6 rounded-xl text-center hover:shadow-md transition-all">
-                    <div className="w-12 h-12 bg-[#00482B] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-xl">
-                      {step.n}
-                    </div>
+                    <div className="w-12 h-12 bg-[#00482B] text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold text-xl">{step.n}</div>
                     <h3 className="font-bold text-gray-900 mb-2">{step.title}</h3>
                     <p className="text-sm text-gray-600">{step.desc}</p>
                   </div>
@@ -492,32 +317,21 @@ export default function Sobre() {
           </div>
         </section>
 
-        {/* CTA FINAL */}
+        {/* ── CTA FINAL ────────────────────────────────────────────── */}
         <section className="py-20 bg-gradient-to-br from-[#00482B] to-[#00703C]">
           <div className="max-w-7xl mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-              Pronto para falar com a gente?
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Pronto para falar com a gente?</h2>
             <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-              Sua manifestação é o primeiro passo para construirmos uma relação
-              ainda mais transparente e de confiança.
+              Sua manifestação é o primeiro passo para construirmos uma relação ainda mais transparente e de confiança.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                asChild
-                className="bg-white text-[#00482B] hover:bg-gray-100 rounded-full px-8 py-6 text-lg font-semibold shadow-lg"
-              >
+              <Button asChild className="bg-white text-[#00482B] hover:bg-gray-100 rounded-full px-8 py-6 text-lg font-semibold shadow-lg">
                 <Link to="/ouvidoria/nova">
                   Fazer Manifestação
                   <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
                 </Link>
               </Button>
-
-              <Button
-                asChild
-                variant="outline"
-                className="border-2 border-white text-white hover:bg-white/10 rounded-full px-8 py-6 text-lg font-semibold"
-              >
+              <Button asChild className="bg-white/15 border-2 border-white text-white hover:bg-white hover:text-[#00482B] rounded-full px-8 py-6 text-lg font-semibold transition-all">
                 <Link to="/ouvidoria/consultar">Consultar Protocolo</Link>
               </Button>
             </div>
@@ -525,22 +339,20 @@ export default function Sobre() {
         </section>
       </div>
 
-      {/* FOOTER */}
+      {/* ── FOOTER ───────────────────────────────────────────────── */}
       <footer className="bg-gray-900 text-white/80 py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-            <div className="flex items-center gap-4">
+            {/* Logo → home do site */}
+            <Link to="/" className="flex items-center gap-4">
               <img src={LOGO_URL} alt="Logo" className="h-10" />
-              <span className="text-sm text-white/60">
-                © {new Date().getFullYear()} - Premium Bebidas
-              </span>
-            </div>
+              <span className="text-sm text-white/60">© {new Date().getFullYear()} - Premium Bebidas</span>
+            </Link>
 
             <div className="flex gap-8 text-sm">
-              <Link to="/ouvidoria" className="text-white/60 hover:text-white transition-colors">Início</Link>
-              <Link to="/ouvidoria/sobre" className="text-white hover:text-white transition-colors">Sobre</Link>
+              <Link to="/ouvidoria/sobre"    className="text-white font-medium hover:text-white transition-colors">Início</Link>
               <Link to="/ouvidoria/consultar" className="text-white/60 hover:text-white transition-colors">Consultar</Link>
-              <Link to="/ouvidoria/admin" className="text-white/60 hover:text-white transition-colors">Admin</Link>
+              <Link to="/ouvidoria/admin"    className="text-white/60 hover:text-white transition-colors">Admin</Link>
             </div>
           </div>
 
