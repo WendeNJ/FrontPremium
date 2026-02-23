@@ -345,7 +345,7 @@ export default function Sobre() {
                     <Mail className="w-6 h-6 text-[#00482B] flex-shrink-0 mt-1" />
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Canal oficial da Ouvidoria</p>
-                      <p className="font-medium text-gray-900">rh@premiumteresina.com.br</p>
+                      <p className="font-medium text-gray-900">contato@premiumteresina.com.br</p>
                       <p className="text-sm text-gray-600 mt-2">
                         Respondemos todas as manifestações em até 5 dias úteis
                       </p>
