@@ -1,19 +1,20 @@
-import { Routes, Route } from 'react-router-dom'
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Layout from './Layout';
+import Home from './pages/Home';
+import Admin from './pages/Admin';
+import Ouvidoria from './pages/Ouvidoria';
 
-import OuvidoriaHome from '../ouvidoria'
-import NovaManifestacao from '../ouvidoria/NovaManifestacao'
-import Consultar from '../ouvidoria/Consultar'
-import Sobre from '../ouvidoria/Sobre'
-import AdminOuvidoria from './AdminOuvidoria'
-
-export default function Ouvidoria() {
+function App() {
   return (
-    <Routes>
-      <Route index element={<OuvidoriaHome />} />
-      <Route path="nova" element={<NovaManifestacao />} />
-      <Route path="consultar" element={<Consultar />} />
-      <Route path="sobre" element={<Sobre />} />
-      <Route path="admin" element={<AdminOuvidoria />} />
-    </Routes>
-  )
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/ouvidoria/*" element={<Ouvidoria />} />
+      </Routes>
+    </Layout>
+  );
 }
+
+export default App;
