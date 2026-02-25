@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { criarManifestacao, criarManifestacaoComArquivo } from '@/api/ouvidoriaApi'
+import { criarManifestacao } from '@/api/ouvidoriaApi'
 import { base44 } from '@/api/base44Client'
 import { Button } from '@/components/ui/button'
-import { Upload, FileText, ArrowLeft, CheckCircle, Menu, X, User, Mail, Phone, Building2, Tag, MessageSquare, Shield } from 'lucide-react'
+import { FileText, ArrowLeft, CheckCircle, Menu, X, User, Mail, Phone, Building2, Tag, MessageSquare, Shield } from 'lucide-react'
 
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
 
@@ -22,7 +22,6 @@ export default function NovaManifestacao() {
     anonima: false,
   })
 
-  const [arquivo, setArquivo] = useState(null)
   const [unidades, setUnidades] = useState([])
   const [categorias, setCategorias] = useState([])
   const [protocolo, setProtocolo] = useState(null)
@@ -54,26 +53,11 @@ export default function NovaManifestacao() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  function handleFileChange(e) {
-    const file = e.target.files[0]
-    if (file) {
-      const maxSize = 5 * 1024 * 1024 // 5MB
-      if (file.size > maxSize) {
-        alert('Arquivo muito grande. Tamanho máximo: 5MB')
-        e.target.value = ''
-        return
-      }
-      setArquivo(file)
-    }
-  }
-
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
 
     try {
-      let res
-
       const dadosParaEnviar = {
         nome: form.nome,
         email: form.email,
@@ -85,23 +69,7 @@ export default function NovaManifestacao() {
         tipo: 'RECLAMACAO'
       }
 
-      if (arquivo) {
-        const formData = new FormData()
-        formData.append('nome', form.nome)
-        formData.append('email', form.email)
-        formData.append('descricao', form.descricao)
-        formData.append('unidadeId', form.unidadeId)
-        formData.append('categoriaId', form.categoriaId)
-        formData.append('telefone', form.telefone || '')
-        formData.append('anonima', form.anonima.toString())
-        formData.append('tipo', 'RECLAMACAO')
-        formData.append('arquivo', arquivo)
-
-        res = await criarManifestacaoComArquivo(formData)
-      } else {
-        res = await criarManifestacao(dadosParaEnviar)
-      }
-
+      const res = await criarManifestacao(dadosParaEnviar)
       setProtocolo(res.data.protocolo)
     } catch (err) {
       console.error('Erro detalhado:', err.response?.data || err.message)
@@ -224,7 +192,6 @@ export default function NovaManifestacao() {
                     telefone: '',
                     anonima: false,
                   })
-                  setArquivo(null)
                 }}
                 className="flex-1 bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white rounded-full shadow-lg hover:shadow-xl transition-all"
               >
@@ -242,10 +209,15 @@ export default function NovaManifestacao() {
                 <img src={LOGO_URL} alt="Logo" className="h-10" />
                 <span className="text-sm">© {new Date().getFullYear()} - Todos os direitos reservados</span>
               </div>
-              <div className="flex gap-6 text-sm">
-                <Link to="/ouvidoria/sobre" className="hover:text-white transition-colors">Sobre</Link>
-                <Link to="/ouvidoria/consultar" className="hover:text-white transition-colors">Consultar</Link>
-                <Link to="/ouvidoria" className="hover:text-white transition-colors">Início</Link>
+              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-white/70" />
+                  <span className="text-sm text-white/90">rh@premiumteresina.com.br</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-white/70" />
+                  <span className="text-sm text-white/90">(86) 8825-0227</span>
+                </div>
               </div>
             </div>
           </div>
@@ -521,70 +493,6 @@ export default function NovaManifestacao() {
                 </div>
               </div>
 
-              {/* Anexo */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 pb-2 border-b border-gray-200">
-                  <Upload className="w-5 h-5 text-[#00703C]" />
-                  Anexos
-                </h3>
-
-                <div className="relative">
-                  <input
-                    type="file"
-                    id="file-upload"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="flex flex-col items-center justify-center w-full px-4 py-8 border-3 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#00703C] hover:bg-gradient-to-b hover:from-gray-50 hover:to-white transition-all group"
-                  >
-                    <Upload className="w-8 h-8 text-gray-400 group-hover:text-[#00703C] transition-colors mb-3" />
-                    <span className="text-gray-600 font-medium group-hover:text-[#00703C] transition-colors">
-                      {arquivo ? 'Trocar arquivo' : 'Clique para escolher um arquivo'}
-                    </span>
-                    <span className="text-xs text-gray-500 mt-2">
-                      ou arraste e solte aqui
-                    </span>
-                  </label>
-                </div>
-
-                {arquivo && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 p-4 bg-gradient-to-r from-[#00482B]/5 to-[#00703C]/5 rounded-lg border border-[#00703C]/20"
-                  >
-                    <div className="p-2 bg-white rounded-lg">
-                      <FileText className="w-6 h-6 text-[#00703C]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">
-                        {arquivo.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {(arquivo.size / 1024).toFixed(2)} KB
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setArquivo(null)}
-                      className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
-                    >
-                      Remover
-                    </button>
-                  </motion.div>
-                )}
-
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-xs text-gray-600 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-gray-400" />
-                    Formatos aceitos: PDF, DOC, DOCX, JPG, PNG, ZIP (tamanho máximo: 5MB)
-                  </p>
-                </div>
-              </div>
-
               {/* Botão */}
               <div className="pt-6">
                 <Button
@@ -613,7 +521,7 @@ export default function NovaManifestacao() {
         </motion.div>
       </div>
 
-     
+      {/* FOOTER */}
       <footer className="bg-[#00482B] text-white/90 py-10 mt-auto">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -623,7 +531,6 @@ export default function NovaManifestacao() {
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
-              {/* 🔥 CONTATOS PREMIUM */}
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-white/70" />
                 <span className="text-sm text-white/90">rh@premiumteresina.com.br</span>
