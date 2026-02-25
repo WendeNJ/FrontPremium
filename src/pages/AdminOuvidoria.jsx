@@ -30,10 +30,18 @@ import {
   MessageSquare,
   Filter,
   ChevronDown,
-  Home
+  Home,
+  UserPlus,
+  Trash2,
+  Mail,
+  Bell,
+  BellOff,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react'
 
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
+const MAX_AUDITORES = 4
 
 const STATUS_OPTIONS = [
   { value: 'ABERTA', label: 'Aberta', color: 'bg-blue-500/20 text-blue-500', icon: AlertCircle },
@@ -42,17 +50,42 @@ const STATUS_OPTIONS = [
   { value: 'ENCERRADA', label: 'Encerrada', color: 'bg-gray-500/20 text-gray-500', icon: XCircle },
 ]
 
+// ─── Helpers de persistência dos auditores ────────────────────────────────────
+// Idealmente isso viria do backend; aqui usamos localStorage como placeholder
+// simples até a integração real ser feita.
+const STORAGE_KEY = 'ouvidoria_auditores'
+
+function loadAuditores() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
+  } catch {
+    return []
+  }
+}
+
+function saveAuditores(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function AdminOuvidoria() {
   const navigate = useNavigate()
+
+  // Auth
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loginUser, setLoginUser] = useState('')
   const [loginPass, setLoginPass] = useState('')
   const [loginError, setLoginError] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
+
+  // UI
   const [accessCount, setAccessCount] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('manifestacoes') // 'manifestacoes' | 'auditores'
+
+  // Manifestações
   const [manifestacoes, setManifestacoes] = useState([])
   const [loadingManifestacoes, setLoadingManifestacoes] = useState(true)
-  const [loginLoading, setLoginLoading] = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('TODAS')
   const [busca, setBusca] = useState('')
   const [modalAberto, setModalAberto] = useState(false)
@@ -61,15 +94,21 @@ export default function AdminOuvidoria() {
   const [formEdicao, setFormEdicao] = useState({ status: '' })
   const [showFilters, setShowFilters] = useState(false)
 
-  // Verifica se o usuário já está logado
+  // Auditores
+  const [auditores, setAuditores] = useState([])
+  const [novoEmail, setNovoEmail] = useState('')
+  const [novoNome, setNovoNome] = useState('')
+  const [addingAuditor, setAddingAuditor] = useState(false)
+  const [auditorFeedback, setAuditorFeedback] = useState(null) // { type: 'success'|'error', msg }
+  const [removingId, setRemovingId] = useState(null)
+
+  // ── Init ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const checkIfLoggedIn = async () => {
       try {
         await usersAPI.testAuth()
-        console.log('✅ Usuário já está logado')
         setIsAuthenticated(true)
-      } catch (error) {
-        console.log('ℹ️ Não foi possível verificar login:', error)
+      } catch {
         setIsAuthenticated(false)
       }
     }
@@ -77,24 +116,26 @@ export default function AdminOuvidoria() {
   }, [])
 
   useEffect(() => {
-    const count = localStorage.getItem('ouvidoriaAdminAccessCount') || 0
-    const newCount = parseInt(count) + 1
-    setAccessCount(newCount)
-    localStorage.setItem('ouvidoriaAdminAccessCount', newCount.toString())
+    const count = parseInt(localStorage.getItem('ouvidoriaAdminAccessCount') || '0') + 1
+    setAccessCount(count)
+    localStorage.setItem('ouvidoriaAdminAccessCount', count.toString())
   }, [])
 
   useEffect(() => {
-    if (isAuthenticated) carregarManifestacoes()
+    if (isAuthenticated) {
+      carregarManifestacoes()
+      setAuditores(loadAuditores())
+    }
   }, [isAuthenticated])
 
+  // ── Manifestações ───────────────────────────────────────────────────────────
   async function carregarManifestacoes() {
     setLoadingManifestacoes(true)
     try {
       const data = await base44.entities.Manifestacoes.list()
       setManifestacoes(data || [])
-      console.log('📦 Manifestações carregadas:', data?.length || 0)
     } catch (err) {
-      console.error('❌ Erro ao carregar manifestações:', err)
+      console.error('Erro ao carregar manifestações:', err)
     } finally {
       setLoadingManifestacoes(false)
     }
@@ -104,7 +145,6 @@ export default function AdminOuvidoria() {
     e.preventDefault()
     setLoginError('')
     setLoginLoading(true)
-
     try {
       await usersAPI.login({ email: loginUser, password: loginPass })
       setIsAuthenticated(true)
@@ -118,13 +158,11 @@ export default function AdminOuvidoria() {
   const handleLogout = async () => {
     try {
       await usersAPI.logout()
-      setIsAuthenticated(false)
-      setLoginUser('')
-      setLoginPass('')
-      navigate('/ouvidoria')
-    } catch (error) {
-      console.error('Erro no logout:', error)
-    }
+    } catch {}
+    setIsAuthenticated(false)
+    setLoginUser('')
+    setLoginPass('')
+    navigate('/ouvidoria')
   }
 
   function abrirModal(manifestacao) {
@@ -141,18 +179,14 @@ export default function AdminOuvidoria() {
   async function salvarAlteracoes() {
     if (!manifestacaoSelecionada) return
     setSalvando(true)
-    
     try {
       const protocolo = manifestacaoSelecionada.protocolo
       if (!protocolo) throw new Error('Protocolo não encontrado')
-
       await base44.entities.Manifestacoes.atualizarStatus(protocolo, formEdicao.status)
-      
       fecharModal()
       carregarManifestacoes()
     } catch (err) {
-      console.error('❌ Erro:', err)
-      alert('❌ Erro: ' + err.message)
+      alert('Erro: ' + err.message)
     } finally {
       setSalvando(false)
     }
@@ -169,23 +203,16 @@ export default function AdminOuvidoria() {
 
   function formatarData(dataString) {
     if (!dataString) return ''
-    const data = new Date(dataString)
-    return data.toLocaleDateString('pt-BR', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(dataString).toLocaleDateString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
     })
   }
 
   function formatarTipo(tipo) {
-    const tipos = { 
-      RECLAMACAO: 'Reclamação', 
-      DENUNCIA: 'Denúncia', 
-      SUGESTAO: 'Sugestão', 
-      ELOGIO: 'Elogio', 
-      SOLICITACAO: 'Solicitação' 
+    const tipos = {
+      RECLAMACAO: 'Reclamação', DENUNCIA: 'Denúncia', SUGESTAO: 'Sugestão',
+      ELOGIO: 'Elogio', SOLICITACAO: 'Solicitação',
     }
     return tipos[tipo?.toUpperCase()] || tipo || 'Não informado'
   }
@@ -198,9 +225,71 @@ export default function AdminOuvidoria() {
     encerradas: manifestacoes.filter((m) => m.status === 'ENCERRADA').length,
   }
 
-  // ============================================
-  // 📌 TELA DE LOGIN
-  // ============================================
+  // ── Auditores ───────────────────────────────────────────────────────────────
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
+  function showFeedback(type, msg) {
+    setAuditorFeedback({ type, msg })
+    setTimeout(() => setAuditorFeedback(null), 3500)
+  }
+
+  async function handleAddAuditor(e) {
+    e.preventDefault()
+    if (!isValidEmail(novoEmail)) {
+      showFeedback('error', 'E-mail inválido.')
+      return
+    }
+    if (auditores.length >= MAX_AUDITORES) {
+      showFeedback('error', `Limite de ${MAX_AUDITORES} auditores atingido.`)
+      return
+    }
+    if (auditores.find((a) => a.email.toLowerCase() === novoEmail.toLowerCase())) {
+      showFeedback('error', 'Este e-mail já está cadastrado.')
+      return
+    }
+
+    setAddingAuditor(true)
+    try {
+      // TODO: chamar API real para persistir no backend e configurar envio de e-mail
+      // await auditoresAPI.add({ nome: novoNome, email: novoEmail })
+
+      const novo = {
+        id: Date.now().toString(),
+        nome: novoNome.trim() || novoEmail.split('@')[0],
+        email: novoEmail.trim().toLowerCase(),
+        adicionadoEm: new Date().toISOString(),
+      }
+      const updated = [...auditores, novo]
+      setAuditores(updated)
+      saveAuditores(updated)
+      setNovoEmail('')
+      setNovoNome('')
+      showFeedback('success', `${novo.nome} adicionado como auditor.`)
+    } catch (err) {
+      showFeedback('error', 'Erro ao adicionar auditor.')
+    } finally {
+      setAddingAuditor(false)
+    }
+  }
+
+  async function handleRemoveAuditor(id) {
+    setRemovingId(id)
+    try {
+      // TODO: await auditoresAPI.remove(id)
+      const updated = auditores.filter((a) => a.id !== id)
+      setAuditores(updated)
+      saveAuditores(updated)
+      showFeedback('success', 'Auditor removido.')
+    } catch {
+      showFeedback('error', 'Erro ao remover auditor.')
+    } finally {
+      setRemovingId(null)
+    }
+  }
+
+  // ── LOGIN SCREEN ─────────────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#0a0a0a] to-[#111111] flex items-center justify-center px-6 relative overflow-hidden">
@@ -208,32 +297,24 @@ export default function AdminOuvidoria() {
         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-green-500/30 to-transparent" />
         <div className="absolute -top-48 -right-48 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
         <div className="absolute -bottom-48 -left-48 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
-        
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md relative z-10"
-        >
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-md relative z-10">
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#111111] border border-white/10 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
             <div className="text-center mb-8">
-              <div className="relative">
+              <div className="relative inline-block">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-green-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/20">
                   <Shield className="w-10 h-10 text-black" />
                 </div>
-                <div className="absolute -top-2 -right-2">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                  </span>
-                </div>
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
+                </span>
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">Ouvidoria</h1>
-              <p className="text-white/50">Área Administrativa - Premium Bebidas</p>
+              <p className="text-white/50">Área Administrativa — Premium Bebidas</p>
               <div className="flex items-center justify-center gap-2 mt-4">
                 <Badge variant="outline" className="border-green-500/30 text-green-500 bg-green-500/5">
-                  <Shield className="w-3 h-3 mr-1" />
-                  Acesso Restrito
+                  <Shield className="w-3 h-3 mr-1" /> Acesso Restrito
                 </Badge>
               </div>
             </div>
@@ -243,78 +324,46 @@ export default function AdminOuvidoria() {
                 <Label className="text-white/70 text-sm font-medium">E-mail</Label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <Input
-                    type="email"
-                    value={loginUser}
-                    onChange={(e) => setLoginUser(e.target.value)}
+                  <Input type="email" value={loginUser} onChange={(e) => setLoginUser(e.target.value)}
                     className="bg-white/5 border-white/10 text-white pl-10 h-12 focus:border-green-500/50 focus:ring-green-500/20 transition-all"
-                    placeholder="seu@email.com"
-                    required
-                  />
+                    placeholder="seu@email.com" required />
                 </div>
               </div>
-              
               <div className="space-y-2">
                 <Label className="text-white/70 text-sm font-medium">Senha</Label>
                 <div className="relative">
                   <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <Input
-                    type="password"
-                    value={loginPass}
-                    onChange={(e) => setLoginPass(e.target.value)}
+                  <Input type="password" value={loginPass} onChange={(e) => setLoginPass(e.target.value)}
                     className="bg-white/5 border-white/10 text-white pl-10 h-12 focus:border-green-500/50 focus:ring-green-500/20 transition-all"
-                    placeholder="••••••••"
-                    required
-                  />
+                    placeholder="••••••••" required />
                 </div>
               </div>
 
               <AnimatePresence>
                 {loginError && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="bg-red-500/10 border border-red-500/30 rounded-lg p-3"
-                  >
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                    className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
                     <p className="text-red-500 text-sm text-center flex items-center justify-center gap-2">
-                      <AlertCircle className="w-4 h-4" />
-                      {loginError}
+                      <AlertCircle className="w-4 h-4" />{loginError}
                     </p>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <Button
-                type="submit"
-                disabled={loginLoading}
-                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-black font-semibold h-12 rounded-xl shadow-lg shadow-green-500/20 transition-all duration-300 disabled:opacity-50"
-              >
-                {loginLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Acessando...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Acessar Painel
-                  </span>
-                )}
+              <Button type="submit" disabled={loginLoading}
+                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-black font-semibold h-12 rounded-xl shadow-lg shadow-green-500/20 transition-all duration-300 disabled:opacity-50">
+                {loginLoading
+                  ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Acessando...</span>
+                  : <span className="flex items-center gap-2"><Shield className="w-4 h-4" />Acessar Painel</span>}
               </Button>
             </form>
 
             <div className="mt-8 pt-6 border-t border-white/10 text-center">
-              <Link
-                to="/ouvidoria"
-                className="text-white/50 hover:text-white text-sm flex items-center justify-center gap-2 group transition-colors"
-              >
+              <Link to="/ouvidoria" className="text-white/50 hover:text-white text-sm flex items-center justify-center gap-2 group transition-colors">
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 Voltar ao site institucional
               </Link>
-              <p className="text-xs text-white/30 mt-4">
-                © {new Date().getFullYear()} Premium Bebidas
-              </p>
+              <p className="text-xs text-white/30 mt-4">© {new Date().getFullYear()} Premium Bebidas</p>
             </div>
           </div>
         </motion.div>
@@ -322,19 +371,14 @@ export default function AdminOuvidoria() {
     )
   }
 
-  // ============================================
-  // 📌 PAINEL ADMINISTRATIVO
-  // ============================================
+  // ── PAINEL ADMIN ─────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
       {/* HEADER */}
       <header className="bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link 
-              to="/ouvidoria" 
-              className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
-            >
+            <Link to="/ouvidoria" className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
               <ArrowLeft className="w-5 h-5 text-white/70 group-hover:text-white" />
             </Link>
             <img src={LOGO_URL} alt="Logo" className="h-12" />
@@ -349,42 +393,23 @@ export default function AdminOuvidoria() {
               <Eye className="w-4 h-4 text-green-500" />
               <span className="text-sm text-white/70">{accessCount} acessos</span>
             </div>
-            
-            <Button
-              onClick={handleLogout}
-              variant="ghost"
-              className="text-white/70 hover:text-white hover:bg-white/5 rounded-xl"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
+            <Button onClick={handleLogout} variant="ghost" className="text-white/70 hover:text-white hover:bg-white/5 rounded-xl">
+              <LogOut className="w-4 h-4 mr-2" />Sair
             </Button>
           </div>
 
-          <button 
-            className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
+          <button className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
-        
+
         {mobileMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="md:hidden bg-[#0A0A0A] px-4 pb-4 border-t border-gray-800"
-          >
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="md:hidden bg-[#0A0A0A] px-4 pb-4 border-t border-gray-800">
             <div className="flex flex-col gap-3 py-3">
               <Link to="/ouvidoria" className="text-white/70 hover:text-white py-2">Home</Link>
               <Link to="/ouvidoria/consultar" className="text-white/70 hover:text-white py-2">Consultar</Link>
-              <Button 
-                onClick={handleLogout} 
-                variant="outline" 
-                className="border-white/20 text-white mt-2"
-                size="sm"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sair
+              <Button onClick={handleLogout} variant="outline" className="border-white/20 text-white mt-2" size="sm">
+                <LogOut className="w-4 h-4 mr-2" />Sair
               </Button>
             </div>
           </motion.div>
@@ -394,359 +419,411 @@ export default function AdminOuvidoria() {
       <div className="flex-1 py-12 px-4">
         <div className="max-w-7xl mx-auto">
           {/* TÍTULO */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-              Gerenciar Manifestações
-            </h1>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Gerenciar Manifestações</h1>
             <p className="text-gray-600">
               Logado como: <span className="font-semibold text-[#00482B]">{loginUser}</span>
             </p>
           </motion.div>
 
-          {/* DASHBOARD STATS */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
-          >
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all">
-              <p className="text-sm text-gray-600 mb-1">Total</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-xs text-gray-400 mt-2">manifestações</p>
-            </div>
-            <div className="bg-blue-50 rounded-2xl shadow-lg p-6 border border-blue-100 hover:shadow-xl transition-all">
-              <p className="text-sm text-blue-600 mb-1">Abertas</p>
-              <p className="text-3xl font-bold text-blue-700">{stats.abertas}</p>
-              <p className="text-xs text-blue-500/70 mt-2">aguardando</p>
-            </div>
-            <div className="bg-yellow-50 rounded-2xl shadow-lg p-6 border border-yellow-100 hover:shadow-xl transition-all">
-              <p className="text-sm text-yellow-600 mb-1">Em Análise</p>
-              <p className="text-3xl font-bold text-yellow-700">{stats.emAnalise}</p>
-              <p className="text-xs text-yellow-500/70 mt-2">em andamento</p>
-            </div>
-            <div className="bg-green-50 rounded-2xl shadow-lg p-6 border border-green-100 hover:shadow-xl transition-all">
-              <p className="text-sm text-green-600 mb-1">Respondidas</p>
-              <p className="text-3xl font-bold text-green-700">{stats.respondidas}</p>
-              <p className="text-xs text-green-500/70 mt-2">finalizadas</p>
-            </div>
-            <div className="bg-gray-50 rounded-2xl shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-all">
-              <p className="text-sm text-gray-600 mb-1">Encerradas</p>
-              <p className="text-3xl font-bold text-gray-700">{stats.encerradas}</p>
-              <p className="text-xs text-gray-500/70 mt-2">arquivadas</p>
-            </div>
+          {/* STATS */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            {[
+              { label: 'Total', value: stats.total, sub: 'manifestações', cls: 'bg-white border-gray-100 text-gray-900' },
+              { label: 'Abertas', value: stats.abertas, sub: 'aguardando', cls: 'bg-blue-50 border-blue-100 text-blue-700' },
+              { label: 'Em Análise', value: stats.emAnalise, sub: 'em andamento', cls: 'bg-yellow-50 border-yellow-100 text-yellow-700' },
+              { label: 'Respondidas', value: stats.respondidas, sub: 'finalizadas', cls: 'bg-green-50 border-green-100 text-green-700' },
+              { label: 'Encerradas', value: stats.encerradas, sub: 'arquivadas', cls: 'bg-gray-50 border-gray-200 text-gray-700' },
+            ].map(({ label, value, sub, cls }) => (
+              <div key={label} className={`rounded-2xl shadow-lg p-6 border hover:shadow-xl transition-all ${cls}`}>
+                <p className="text-sm mb-1 opacity-80">{label}</p>
+                <p className="text-3xl font-bold">{value}</p>
+                <p className="text-xs mt-2 opacity-60">{sub}</p>
+              </div>
+            ))}
           </motion.div>
 
-          {/* FILTROS E BUSCA */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Filter className="w-5 h-5 text-[#00482B]" />
-                Filtros
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="text-gray-600 hover:text-[#00482B]"
-              >
-                {showFilters ? 'Ocultar' : 'Mostrar'}
-                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-              </Button>
-            </div>
+          {/* TABS */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="flex gap-2 mb-8 bg-white rounded-2xl p-1.5 shadow-lg border border-gray-100 w-fit">
+            <button
+              onClick={() => setActiveTab('manifestacoes')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'manifestacoes'
+                  ? 'bg-gradient-to-r from-[#00482B] to-[#00703C] text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Manifestações
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === 'manifestacoes' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                {manifestacoes.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('auditores')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'auditores'
+                  ? 'bg-gradient-to-r from-[#00482B] to-[#00703C] text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              Auditores
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === 'auditores' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                {auditores.length}/{MAX_AUDITORES}
+              </span>
+            </button>
+          </motion.div>
 
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Buscar por protocolo, nome ou email..." 
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none transition-all" 
-                    value={busca} 
-                    onChange={(e) => setBusca(e.target.value)}
-                  />
+          {/* ── TAB: MANIFESTAÇÕES ──────────────────────────────────────────── */}
+          <AnimatePresence mode="wait">
+            {activeTab === 'manifestacoes' && (
+              <motion.div key="manifestacoes" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                {/* Filtros */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Filter className="w-5 h-5 text-[#00482B]" />Filtros
+                    </h2>
+                    <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="text-gray-600 hover:text-[#00482B]">
+                      {showFilters ? 'Ocultar' : 'Mostrar'}
+                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input type="text" placeholder="Buscar por protocolo, nome ou email..."
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none transition-all"
+                        value={busca} onChange={(e) => setBusca(e.target.value)} />
+                    </div>
+                    <div className="md:w-64">
+                      <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer"
+                        value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+                        <option value="TODAS">Todos os Status</option>
+                        {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="md:w-64">
-                <select 
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer"
-                  value={filtroStatus} 
-                  onChange={(e) => setFiltroStatus(e.target.value)}
-                >
-                  <option value="TODAS">Todos os Status</option>
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </motion.div>
 
-          {/* LISTA DE MANIFESTAÇÕES */}
-          {loadingManifestacoes ? (
-            <div className="bg-white rounded-2xl shadow-lg p-16 text-center border border-gray-100">
-              <Loader2 className="w-12 h-12 animate-spin mx-auto text-[#00703C] mb-4" />
-              <p className="text-gray-600 text-lg">Carregando manifestações...</p>
-            </div>
-          ) : manifestacoesFiltradas.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-lg p-16 text-center border border-gray-100">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">Nenhuma manifestação encontrada</h3>
-              <p className="text-gray-500">Ajuste os filtros ou aguarde novas manifestações</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {manifestacoesFiltradas.map((manifestacao, index) => {
-                const statusOption = STATUS_OPTIONS.find(s => s.value === manifestacao.status) || STATUS_OPTIONS[0]
-                const StatusIcon = statusOption.icon
-                
-                return (
-                  <motion.div 
-                    key={manifestacao.id} 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ y: -2 }}
-                    className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all border border-gray-100"
-                  >
-                    <div className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                        <div className="flex items-center gap-4">
-                          <div className={`p-3 rounded-xl ${statusOption.color} bg-opacity-20`}>
-                            <StatusIcon className="w-6 h-6" />
+                {/* Lista */}
+                {loadingManifestacoes ? (
+                  <div className="bg-white rounded-2xl shadow-lg p-16 text-center border border-gray-100">
+                    <Loader2 className="w-12 h-12 animate-spin mx-auto text-[#00703C] mb-4" />
+                    <p className="text-gray-600 text-lg">Carregando manifestações...</p>
+                  </div>
+                ) : manifestacoesFiltradas.length === 0 ? (
+                  <div className="bg-white rounded-2xl shadow-lg p-16 text-center border border-gray-100">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageSquare className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">Nenhuma manifestação encontrada</h3>
+                    <p className="text-gray-500">Ajuste os filtros ou aguarde novas manifestações</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {manifestacoesFiltradas.map((manifestacao, index) => {
+                      const statusOption = STATUS_OPTIONS.find((s) => s.value === manifestacao.status) || STATUS_OPTIONS[0]
+                      const StatusIcon = statusOption.icon
+                      return (
+                        <motion.div key={manifestacao.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }} whileHover={{ y: -2 }}
+                          className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all border border-gray-100">
+                          <div className="p-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                              <div className="flex items-center gap-4">
+                                <div className={`p-3 rounded-xl ${statusOption.color} bg-opacity-20`}>
+                                  <StatusIcon className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-500">Protocolo</p>
+                                  <p className="text-2xl font-mono font-bold text-[#00482B] tracking-wider">{manifestacao.protocolo}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Badge className={statusOption.color}>{statusOption.label}</Badge>
+                                <Button onClick={() => abrirModal(manifestacao)}
+                                  className="bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all">
+                                  <Edit className="w-4 h-4 mr-2" />Editar Status
+                                </Button>
+                              </div>
+                            </div>
+                            <Separator className="my-4 bg-gray-200" />
+                            <div className="grid md:grid-cols-4 gap-4 text-sm">
+                              {[
+                                { label: 'Tipo', icon: FileText, value: formatarTipo(manifestacao.tipo) },
+                                { label: 'Data', icon: Clock, value: formatarData(manifestacao.datacriacao) },
+                                { label: 'Solicitante', icon: Users, value: manifestacao.anonima ? <span className="text-[#00703C]">ANÔNIMO</span> : (manifestacao.nome || 'Não informado') },
+                                { label: 'Contato', icon: MessageSquare, value: manifestacao.anonima ? '---' : (manifestacao.email || 'Não informado') },
+                              ].map(({ label, icon: Icon, value }) => (
+                                <div key={label} className="bg-gray-50 rounded-xl p-3">
+                                  <p className="text-gray-500 text-xs mb-1 flex items-center gap-1"><Icon className="w-3 h-3" />{label}</p>
+                                  <p className="font-semibold text-gray-900 truncate">{value}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <p className="text-sm text-gray-600 mb-2 font-medium">Descrição:</p>
+                              <div className="bg-gray-50 rounded-xl p-4">
+                                <p className="text-gray-700 leading-relaxed">{manifestacao.descricao}</p>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm text-gray-500">Protocolo</p>
-                            <p className="text-2xl font-mono font-bold text-[#00482B] tracking-wider">
-                              {manifestacao.protocolo}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Badge className={statusOption.color}>
-                            {statusOption.label}
-                          </Badge>
-                          <Button 
-                            onClick={() => abrirModal(manifestacao)} 
-                            className="bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white rounded-full px-6 shadow-lg hover:shadow-xl transition-all"
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Editar Status
-                          </Button>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ── TAB: AUDITORES ──────────────────────────────────────────────── */}
+            {activeTab === 'auditores' && (
+              <motion.div key="auditores" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                className="max-w-2xl">
+
+                {/* Feedback toast */}
+                <AnimatePresence>
+                  {auditorFeedback && (
+                    <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+                      className={`mb-6 flex items-center gap-3 px-5 py-4 rounded-2xl border text-sm font-medium shadow-lg ${
+                        auditorFeedback.type === 'success'
+                          ? 'bg-green-50 border-green-200 text-green-800'
+                          : 'bg-red-50 border-red-200 text-red-800'
+                      }`}>
+                      {auditorFeedback.type === 'success'
+                        ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                        : <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />}
+                      {auditorFeedback.msg}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Info banner */}
+                <div className="bg-gradient-to-r from-[#00482B]/10 to-[#00703C]/5 border border-[#00482B]/20 rounded-2xl p-5 mb-8 flex gap-4">
+                  <div className="p-3 bg-[#00482B]/10 rounded-xl shrink-0">
+                    <Bell className="w-6 h-6 text-[#00482B]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[#00482B] mb-1">Como funciona?</h3>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      Auditores cadastrados recebem uma <strong>cópia automática por e-mail</strong> de todas as manifestações enviadas ao sistema.
+                      Você pode adicionar até <strong>{MAX_AUDITORES} auditores</strong>. Para integrar o envio real, conecte seu serviço de e-mail na API.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Formulário de adição */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
+                  <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-[#00482B]" />
+                    Adicionar Auditor
+                    <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full ${
+                      auditores.length >= MAX_AUDITORES ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {auditores.length}/{MAX_AUDITORES} slots
+                    </span>
+                  </h2>
+
+                  <form onSubmit={handleAddAuditor} className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium text-gray-700">Nome <span className="text-gray-400">(opcional)</span></Label>
+                        <div className="relative">
+                          <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Input
+                            type="text"
+                            value={novoNome}
+                            onChange={(e) => setNovoNome(e.target.value)}
+                            placeholder="Ex: João Silva"
+                            className="pl-10 h-11 border-gray-300 focus:border-[#00703C] focus:ring-[#00703C]/20"
+                            disabled={auditores.length >= MAX_AUDITORES || addingAuditor}
+                          />
                         </div>
                       </div>
-                      
-                      <Separator className="my-4 bg-gray-200" />
-                      
-                      <div className="grid md:grid-cols-4 gap-4 text-sm">
-                        <div className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-500 text-xs mb-1 flex items-center gap-1">
-                            <FileText className="w-3 h-3" />
-                            Tipo
-                          </p>
-                          <p className="font-semibold text-gray-900">{formatarTipo(manifestacao.tipo)}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-500 text-xs mb-1 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            Data
-                          </p>
-                          <p className="font-semibold text-gray-900">{formatarData(manifestacao.datacriacao)}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-500 text-xs mb-1 flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            Solicitante
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {manifestacao.anonima ? (
-                              <span className="text-[#00703C]">ANÔNIMO</span>
-                            ) : (
-                              manifestacao.nome || 'Não informado'
-                            )}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-500 text-xs mb-1 flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            Contato
-                          </p>
-                          <p className="font-semibold text-gray-900 truncate">
-                            {manifestacao.anonima ? '---' : manifestacao.email || 'Não informado'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-sm text-gray-600 mb-2 font-medium">Descrição:</p>
-                        <div className="bg-gray-50 rounded-xl p-4">
-                          <p className="text-gray-700 leading-relaxed">
-                            {manifestacao.descricao}
-                          </p>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium text-gray-700">E-mail <span className="text-red-500">*</span></Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Input
+                            type="email"
+                            value={novoEmail}
+                            onChange={(e) => setNovoEmail(e.target.value)}
+                            placeholder="auditor@empresa.com"
+                            className="pl-10 h-11 border-gray-300 focus:border-[#00703C] focus:ring-[#00703C]/20"
+                            disabled={auditores.length >= MAX_AUDITORES || addingAuditor}
+                            required
+                          />
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          )}
+
+                    <Button
+                      type="submit"
+                      disabled={auditores.length >= MAX_AUDITORES || addingAuditor || !novoEmail}
+                      className="w-full bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white h-11 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                    >
+                      {addingAuditor
+                        ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Adicionando...</span>
+                        : <span className="flex items-center gap-2"><UserPlus className="w-4 h-4" />Adicionar Auditor</span>}
+                    </Button>
+
+                    {auditores.length >= MAX_AUDITORES && (
+                      <p className="text-xs text-center text-red-500 flex items-center justify-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Limite máximo de {MAX_AUDITORES} auditores atingido. Remova um para adicionar outro.
+                      </p>
+                    )}
+                  </form>
+                </div>
+
+                {/* Lista de auditores */}
+                <div className="space-y-3">
+                  {auditores.length === 0 ? (
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BellOff className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="font-semibold text-gray-700 mb-1">Nenhum auditor cadastrado</h3>
+                      <p className="text-sm text-gray-500">Adicione um e-mail acima para começar a receber cópias das manifestações.</p>
+                    </div>
+                  ) : (
+                    auditores.map((auditor, i) => (
+                      <motion.div key={auditor.id}
+                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
+                        className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 flex items-center gap-4 hover:shadow-xl transition-all">
+                        {/* Avatar */}
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00482B] to-[#00703C] flex items-center justify-center shrink-0 shadow-md shadow-green-900/20">
+                          <span className="text-white font-bold text-lg">
+                            {auditor.nome.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{auditor.nome}</p>
+                          <p className="text-sm text-gray-500 truncate flex items-center gap-1">
+                            <Mail className="w-3 h-3 shrink-0" />{auditor.email}
+                          </p>
+                          {auditor.adicionadoEm && (
+                            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                              <Clock className="w-3 h-3 shrink-0" />
+                              Adicionado em {formatarData(auditor.adicionadoEm)}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
+                            <Bell className="w-3 h-3 mr-1" />Ativo
+                          </Badge>
+                          <button
+                            onClick={() => handleRemoveAuditor(auditor.id)}
+                            disabled={removingId === auditor.id}
+                            className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
+                            title="Remover auditor"
+                          >
+                            {removingId === auditor.id
+                              ? <Loader2 className="w-4 h-4 animate-spin" />
+                              : <Trash2 className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+
+                {/* Nota de integração */}
+                <div className="mt-8 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-semibold mb-1">Integração de e-mail pendente</p>
+                    <p className="leading-relaxed">
+                      Os e-mails estão sendo salvos localmente. Para que os auditores recebam notificações reais,
+                      conecte um serviço de e-mail (ex: SendGrid, Nodemailer) na função{' '}
+                      <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">handleAddAuditor</code>{' '}
+                      e na lógica de criação de manifestações.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
       {/* MODAL DE EDIÇÃO */}
       <AnimatePresence>
         {modalAberto && manifestacaoSelecionada && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" 
-            onClick={fecharModal}
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.95, opacity: 0, y: 20 }} 
-              onClick={(e) => e.stopPropagation()} 
-              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200"
-            >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            onClick={fecharModal}>
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }} onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
               <div className="bg-gradient-to-r from-[#00482B] to-[#00703C] px-6 py-5 flex items-center justify-between sticky top-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <Edit className="w-5 h-5 text-white" />
-                  </div>
+                  <div className="p-2 bg-white/10 rounded-lg"><Edit className="w-5 h-5 text-white" /></div>
                   <h2 className="text-xl font-bold text-white">Alterar Status da Manifestação</h2>
                 </div>
-                <button 
-                  onClick={fecharModal} 
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
+                <button onClick={fecharModal} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
-              
+
               <div className="p-6 space-y-6">
                 <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-200">
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-[#00482B]/10 rounded-lg">
-                        <FileText className="w-4 h-4 text-[#00482B]" />
+                    {[
+                      { label: 'Protocolo', icon: FileText, value: <span className="font-mono font-bold text-[#00482B] text-lg">{manifestacaoSelecionada.protocolo}</span> },
+                      { label: 'Tipo', icon: FileText, value: formatarTipo(manifestacaoSelecionada.tipo) },
+                      { label: 'Data de Criação', icon: Clock, value: formatarData(manifestacaoSelecionada.datacriacao) },
+                      { label: 'Solicitante', icon: Users, value: manifestacaoSelecionada.anonima ? 'ANÔNIMO' : manifestacaoSelecionada.nome },
+                    ].map(({ label, icon: Icon, value }) => (
+                      <div key={label} className="flex items-start gap-3">
+                        <div className="p-2 bg-[#00482B]/10 rounded-lg"><Icon className="w-4 h-4 text-[#00482B]" /></div>
+                        <div>
+                          <p className="text-xs text-gray-500">{label}</p>
+                          <p className="font-medium text-gray-900">{value}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Protocolo</p>
-                        <p className="font-mono font-bold text-[#00482B] text-lg">
-                          {manifestacaoSelecionada.protocolo}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-[#00482B]/10 rounded-lg">
-                        <FileText className="w-4 h-4 text-[#00482B]" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Tipo</p>
-                        <p className="font-medium text-gray-900">{formatarTipo(manifestacaoSelecionada.tipo)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-[#00482B]/10 rounded-lg">
-                        <Clock className="w-4 h-4 text-[#00482B]" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Data de Criação</p>
-                        <p className="font-medium text-gray-900">
-                          {formatarData(manifestacaoSelecionada.datacriacao)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-[#00482B]/10 rounded-lg">
-                        <Users className="w-4 h-4 text-[#00482B]" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Solicitante</p>
-                        <p className="font-medium text-gray-900">
-                          {manifestacaoSelecionada.anonima ? 'ANÔNIMO' : manifestacaoSelecionada.nome}
-                        </p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <RefreshCw className="w-4 h-4 text-[#00482B]" />
-                    Status da Manifestação *
+                    <RefreshCw className="w-4 h-4 text-[#00482B]" />Status da Manifestação *
                   </label>
-                  <select 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer text-gray-900"
-                    value={formEdicao.status} 
-                    onChange={(e) => setFormEdicao({ ...formEdicao, status: e.target.value })}
-                    disabled={salvando}
-                  >
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status.value} value={status.value}>
-                        {status.label}
-                      </option>
-                    ))}
+                  <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer text-gray-900"
+                    value={formEdicao.status} onChange={(e) => setFormEdicao({ ...formEdicao, status: e.target.value })} disabled={salvando}>
+                    {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-[#00482B]" />
-                    Descrição Original
+                    <MessageSquare className="w-4 h-4 text-[#00482B]" />Descrição Original
                   </label>
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <p className="text-gray-700 whitespace-pre-line leading-relaxed">
-                      {manifestacaoSelecionada.descricao}
-                    </p>
+                    <p className="text-gray-700 whitespace-pre-line leading-relaxed">{manifestacaoSelecionada.descricao}</p>
                   </div>
                 </div>
-                
+
                 <Separator className="bg-gray-200" />
-                
+
                 <div className="flex gap-3 pt-2">
-                  <Button 
-                    onClick={fecharModal} 
-                    variant="outline" 
-                    className="flex-1 rounded-xl h-12 border-2 hover:bg-gray-50 transition-all"
-                    disabled={salvando}
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancelar
+                  <Button onClick={fecharModal} variant="outline" className="flex-1 rounded-xl h-12 border-2 hover:bg-gray-50 transition-all" disabled={salvando}>
+                    <X className="w-4 h-4 mr-2" />Cancelar
                   </Button>
-                  <Button 
-                    onClick={salvarAlteracoes} 
+                  <Button onClick={salvarAlteracoes}
                     className="flex-1 bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white rounded-xl h-12 shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
-                    disabled={salvando}
-                  >
-                    {salvando ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Salvando...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Save className="w-4 h-4" />
-                        Salvar Alterações
-                      </span>
-                    )}
+                    disabled={salvando}>
+                    {salvando
+                      ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Salvando...</span>
+                      : <span className="flex items-center gap-2"><Save className="w-4 h-4" />Salvar Alterações</span>}
                   </Button>
                 </div>
               </div>
@@ -758,12 +835,8 @@ export default function AdminOuvidoria() {
       {/* FOOTER */}
       <footer className="bg-gradient-to-r from-[#00482B] to-[#00703C] text-white py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-sm text-white/90">
-            © {new Date().getFullYear()} Premium Bebidas - Sistema de Ouvidoria
-          </p>
-          <p className="text-xs text-white/70 mt-2">
-            Área Administrativa - Acesso Restrito
-          </p>
+          <p className="text-sm text-white/90">© {new Date().getFullYear()} Premium Bebidas — Sistema de Ouvidoria</p>
+          <p className="text-xs text-white/70 mt-2">Área Administrativa — Acesso Restrito</p>
         </div>
       </footer>
     </div>
