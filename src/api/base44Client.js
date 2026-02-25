@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8081"; // ✅ CORRETO
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8081";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // 🔥 ESSENCIAL para cookies de autenticação
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -40,7 +40,6 @@ export function consultarPorProtocolo(protocolo) {
   return api.get(`/manifestacoes/protocolo/${protocolo}`);
 }
 
-// 🔥🔥🔥 NOVA FUNÇÃO - ATUALIZAR STATUS POR PROTOCOLO
 export function atualizarStatusPorProtocolo(protocolo, status) {
   return api.patch(`/manifestacoes/${protocolo}/status?status=${status}`);
 }
@@ -56,12 +55,6 @@ export function updateConfiguracaoOuvidoria(data) {
 // ============================================
 // 📌 MANIFESTAÇÕES API (objeto completo)
 // ============================================
-export const auditoresAPI = {
-  list:   ()           => api.get("/api/ouvidoria/auditores").then(res => res.data),
-  add:    (data)       => api.post("/api/ouvidoria/auditores", data).then(res => res.data),
-  remove: (id)         => api.delete(`/api/ouvidoria/auditores/${id}`).then(res => res.data),
-};
-
 export const manifestacoesAPI = {
   list: () => api.get("/manifestacoes").then(res => res.data),
   consultarPorProtocolo: (protocolo) => api.get(`/manifestacoes/protocolo/${protocolo}`).then(res => res.data),
@@ -69,12 +62,8 @@ export const manifestacoesAPI = {
   createComArquivo: (formData) => api.post("/manifestacoes", formData, {
     headers: { "Content-Type": "multipart/form-data" }
   }).then(res => res.data),
-  
-  // 🔥🔥🔥 NOVO MÉTODO - ATUALIZAR STATUS POR PROTOCOLO
-  atualizarStatus: (protocolo, status) => 
+  atualizarStatus: (protocolo, status) =>
     api.patch(`/manifestacoes/${protocolo}/status?status=${status}`).then(res => res.data),
-  
-  // 🔥 MÉTODOS DEPRECATED - Manter só para compatibilidade
   update: (id, data) => {
     console.warn('⚠️ update() está obsoleto! Use atualizarStatus(protocolo, status)');
     return api.put(`/manifestacoes/${id}`, data).then(res => res.data);
@@ -112,8 +101,6 @@ export const usersAPI = {
   create: (data) => api.post("/users", data).then(res => res.data),
   update: (id, data) => api.put(`/users/${id}`, data).then(res => res.data),
   delete: (id) => api.delete(`/users/${id}`),
-  
-  // Autenticação
   login: (credentials) => api.post("/users/login", credentials).then(res => res.data),
   logout: () => api.post("/users/logout"),
   testAuth: () => api.get("/users/test/administrator").then(res => res.data),
@@ -130,7 +117,7 @@ export const respostasAPI = {
 };
 
 // ============================================
-// 📌 CARDS DO MURAL
+// 📌 CARDS DO MURAL - COM /api ✅
 // ============================================
 export const cardMuralAPI = {
   list: () => api.get("/api/cards").then(res => res.data),
@@ -142,7 +129,7 @@ export const cardMuralAPI = {
 };
 
 // ============================================
-// 📌 NOTÍCIAS 🔥 CONECTADO!
+// 📌 NOTÍCIAS - COM /api ✅
 // ============================================
 export const noticiasAPI = {
   list: () => api.get("/api/noticias").then(res => res.data),
@@ -161,10 +148,19 @@ export const configuracaoAPI = {
 };
 
 // ============================================
-// 📌 ESTATÍSTICAS
+// 📌 ESTATÍSTICAS - COM /api ✅
 // ============================================
 export const estatisticasAPI = {
   get: () => api.get("/api/estatisticas").then(res => res.data),
+};
+
+// ============================================
+// 📌 AUDITORES ✅
+// ============================================
+export const auditoresAPI = {
+  list:   ()     => api.get("/api/ouvidoria/auditores").then(res => res.data),
+  add:    (data) => api.post("/api/ouvidoria/auditores", data).then(res => res.data),
+  remove: (id)   => api.delete(`/api/ouvidoria/auditores/${id}`).then(res => res.data),
 };
 
 // ============================================
@@ -194,14 +190,9 @@ async function request(endpoint, method = "GET", body = null) {
 // ============================================
 // 📌 EXPORT COMPATÍVEL COM CÓDIGO ANTIGO (base44)
 // ============================================
-Auditores: {
-  list:   ()     => request(`/api/ouvidoria/auditores`),
-  add:    (data) => request(`/api/ouvidoria/auditores`, "POST", data),
-  remove: (id)   => request(`/api/ouvidoria/auditores/${id}`, "DELETE"),
-},
-
 export const base44 = {
   entities: {
+    // Rotas SEM /api
     Unidades: {
       get: (id) => request(`/unidades/${id}`),
       list: () => request(`/unidades`),
@@ -235,17 +226,12 @@ export const base44 = {
       delete: (id) => request(`/respostas/${id}`, "DELETE"),
     },
 
-    // 🔥🔥🔥 MANIFESTAÇÕES - COMPLETAMENTE ATUALIZADO
     Manifestacoes: {
       list: () => request(`/manifestacoes`),
       consultarPorProtocolo: (protocolo) => request(`/manifestacoes/protocolo/${protocolo}`),
       create: (data) => request(`/manifestacoes`, "POST", data),
-      
-      // 🔥🔥🔥 NOVO MÉTODO - ATUALIZAR STATUS POR PROTOCOLO
-      atualizarStatus: (protocolo, status) => 
+      atualizarStatus: (protocolo, status) =>
         request(`/manifestacoes/${protocolo}/status?status=${status}`, "PATCH"),
-      
-      // 🔥 MÉTODOS DEPRECATED - Manter só para compatibilidade
       update: (id, data) => {
         console.warn('⚠️ update() está obsoleto! Use atualizarStatus(protocolo, status)');
         return request(`/manifestacoes/${id}`, "PUT", data);
@@ -253,6 +239,7 @@ export const base44 = {
       delete: (id) => request(`/manifestacoes/${id}`, "DELETE"),
     },
 
+    // Rotas COM /api
     CardMural: {
       list: () => request(`/api/cards`),
       getById: (id) => request(`/api/cards/${id}`),
@@ -268,6 +255,17 @@ export const base44 = {
       create: (data) => request(`/api/noticias`, "POST", data),
       update: (id, data) => request(`/api/noticias/${id}`, "PUT", data),
       delete: (id) => request(`/api/noticias/${id}`, "DELETE"),
+    },
+
+    Estatisticas: {
+      get: () => request(`/api/estatisticas`),
+    },
+
+    // ✅ AUDITORES
+    Auditores: {
+      list:   ()     => request(`/api/ouvidoria/auditores`),
+      add:    (data) => request(`/api/ouvidoria/auditores`, "POST", data),
+      remove: (id)   => request(`/api/ouvidoria/auditores/${id}`, "DELETE"),
     },
   },
 };
