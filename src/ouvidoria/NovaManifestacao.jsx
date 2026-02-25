@@ -5,7 +5,7 @@ import { criarManifestacao } from '@/api/ouvidoriaApi'
 import { base44 } from '@/api/base44Client'
 import { Button } from '@/components/ui/button'
 import { FileText, ArrowLeft, CheckCircle, Menu, X, User, Mail, Phone, Building2, Tag, MessageSquare, Shield } from 'lucide-react'
-.
+
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
 
 export default function NovaManifestacao() {
