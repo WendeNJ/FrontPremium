@@ -2,109 +2,67 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { base44 } from '@/api/base44Client'
-import { usersAPI } from '@/api/ouvidoriaApi'
+import { usersAPI, auditoresAPI } from '@/api/ouvidoriaApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
-  Search,
-  X,
-  Edit,
-  Save,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Menu,
-  ArrowLeft,
-  Loader2,
-  Settings,
-  LogOut,
-  Eye,
-  Shield,
-  Users,
-  Clock,
-  FileText,
-  MessageSquare,
-  Filter,
-  ChevronDown,
-  Home,
-  UserPlus,
-  Trash2,
-  Mail,
-  Bell,
-  BellOff,
-  CheckCircle2,
-  AlertTriangle,
+  Search, X, Edit, Save, AlertCircle, CheckCircle, XCircle,
+  RefreshCw, Menu, ArrowLeft, Loader2, LogOut, Eye, Shield,
+  Users, Clock, FileText, MessageSquare, Filter, ChevronDown,
+  UserPlus, Trash2, Mail, Bell, BellOff, CheckCircle2, AlertTriangle,
 } from 'lucide-react'
 
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
 const MAX_AUDITORES = 4
 
 const STATUS_OPTIONS = [
-  { value: 'ABERTA', label: 'Aberta', color: 'bg-blue-500/20 text-blue-500', icon: AlertCircle },
+  { value: 'ABERTA',     label: 'Aberta',     color: 'bg-blue-500/20 text-blue-500',    icon: AlertCircle },
   { value: 'EM_ANALISE', label: 'Em Análise', color: 'bg-yellow-500/20 text-yellow-500', icon: RefreshCw },
-  { value: 'RESPONDIDA', label: 'Respondida', color: 'bg-green-500/20 text-green-500', icon: CheckCircle },
-  { value: 'ENCERRADA', label: 'Encerrada', color: 'bg-gray-500/20 text-gray-500', icon: XCircle },
+  { value: 'RESPONDIDA', label: 'Respondida', color: 'bg-green-500/20 text-green-500',  icon: CheckCircle },
+  { value: 'ENCERRADA',  label: 'Encerrada',  color: 'bg-gray-500/20 text-gray-500',    icon: XCircle },
 ]
-
-// ─── Helpers de persistência dos auditores ────────────────────────────────────
-// Idealmente isso viria do backend; aqui usamos localStorage como placeholder
-// simples até a integração real ser feita.
-const STORAGE_KEY = 'ouvidoria_auditores'
-
-function loadAuditores() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
-  } catch {
-    return []
-  }
-}
-
-function saveAuditores(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-}
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function AdminOuvidoria() {
   const navigate = useNavigate()
 
-  // Auth
+  // ── Auth ─────────────────────────────────────────────────────────────────────
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [loginUser, setLoginUser] = useState('')
-  const [loginPass, setLoginPass] = useState('')
-  const [loginError, setLoginError] = useState('')
+  const [loginUser,    setLoginUser]    = useState('')
+  const [loginPass,    setLoginPass]    = useState('')
+  const [loginError,   setLoginError]   = useState('')
   const [loginLoading, setLoginLoading] = useState(false)
 
-  // UI
-  const [accessCount, setAccessCount] = useState(0)
+  // ── UI ───────────────────────────────────────────────────────────────────────
+  const [accessCount,    setAccessCount]    = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('manifestacoes') // 'manifestacoes' | 'auditores'
+  const [activeTab,      setActiveTab]      = useState('manifestacoes')
 
-  // Manifestações
-  const [manifestacoes, setManifestacoes] = useState([])
-  const [loadingManifestacoes, setLoadingManifestacoes] = useState(true)
-  const [filtroStatus, setFiltroStatus] = useState('TODAS')
-  const [busca, setBusca] = useState('')
-  const [modalAberto, setModalAberto] = useState(false)
+  // ── Manifestações ─────────────────────────────────────────────────────────────
+  const [manifestacoes,         setManifestacoes]         = useState([])
+  const [loadingManifestacoes,  setLoadingManifestacoes]  = useState(true)
+  const [filtroStatus,          setFiltroStatus]          = useState('TODAS')
+  const [busca,                 setBusca]                 = useState('')
+  const [showFilters,           setShowFilters]           = useState(false)
+  const [modalAberto,           setModalAberto]           = useState(false)
   const [manifestacaoSelecionada, setManifestacaoSelecionada] = useState(null)
-  const [salvando, setSalvando] = useState(false)
-  const [formEdicao, setFormEdicao] = useState({ status: '' })
-  const [showFilters, setShowFilters] = useState(false)
+  const [salvando,              setSalvando]              = useState(false)
+  const [formEdicao,            setFormEdicao]            = useState({ status: '' })
 
-  // Auditores
-  const [auditores, setAuditores] = useState([])
-  const [novoEmail, setNovoEmail] = useState('')
-  const [novoNome, setNovoNome] = useState('')
-  const [addingAuditor, setAddingAuditor] = useState(false)
-  const [auditorFeedback, setAuditorFeedback] = useState(null) // { type: 'success'|'error', msg }
-  const [removingId, setRemovingId] = useState(null)
+  // ── Auditores ─────────────────────────────────────────────────────────────────
+  const [auditores,        setAuditores]        = useState([])
+  const [loadingAuditores, setLoadingAuditores] = useState(false)
+  const [novoEmail,        setNovoEmail]        = useState('')
+  const [novoNome,         setNovoNome]         = useState('')
+  const [addingAuditor,    setAddingAuditor]    = useState(false)
+  const [removingId,       setRemovingId]       = useState(null)
+  const [auditorFeedback,  setAuditorFeedback]  = useState(null)
 
-  // ── Init ────────────────────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const checkIfLoggedIn = async () => {
+    const checkLogin = async () => {
       try {
         await usersAPI.testAuth()
         setIsAuthenticated(true)
@@ -112,7 +70,7 @@ export default function AdminOuvidoria() {
         setIsAuthenticated(false)
       }
     }
-    checkIfLoggedIn()
+    checkLogin()
   }, [])
 
   useEffect(() => {
@@ -124,11 +82,11 @@ export default function AdminOuvidoria() {
   useEffect(() => {
     if (isAuthenticated) {
       carregarManifestacoes()
-      setAuditores(loadAuditores())
+      carregarAuditores()
     }
   }, [isAuthenticated])
 
-  // ── Manifestações ───────────────────────────────────────────────────────────
+  // ── Funções de manifestações ──────────────────────────────────────────────────
   async function carregarManifestacoes() {
     setLoadingManifestacoes(true)
     try {
@@ -156,9 +114,7 @@ export default function AdminOuvidoria() {
   }
 
   const handleLogout = async () => {
-    try {
-      await usersAPI.logout()
-    } catch {}
+    try { await usersAPI.logout() } catch {}
     setIsAuthenticated(false)
     setLoginUser('')
     setLoginPass('')
@@ -194,7 +150,7 @@ export default function AdminOuvidoria() {
 
   const manifestacoesFiltradas = manifestacoes.filter((m) => {
     const matchStatus = filtroStatus === 'TODAS' || m.status === filtroStatus
-    const matchBusca =
+    const matchBusca  =
       m.protocolo?.toLowerCase().includes(busca.toLowerCase()) ||
       m.nome?.toLowerCase().includes(busca.toLowerCase()) ||
       m.email?.toLowerCase().includes(busca.toLowerCase())
@@ -218,14 +174,26 @@ export default function AdminOuvidoria() {
   }
 
   const stats = {
-    total: manifestacoes.length,
-    abertas: manifestacoes.filter((m) => m.status === 'ABERTA').length,
-    emAnalise: manifestacoes.filter((m) => m.status === 'EM_ANALISE').length,
+    total:       manifestacoes.length,
+    abertas:     manifestacoes.filter((m) => m.status === 'ABERTA').length,
+    emAnalise:   manifestacoes.filter((m) => m.status === 'EM_ANALISE').length,
     respondidas: manifestacoes.filter((m) => m.status === 'RESPONDIDA').length,
-    encerradas: manifestacoes.filter((m) => m.status === 'ENCERRADA').length,
+    encerradas:  manifestacoes.filter((m) => m.status === 'ENCERRADA').length,
   }
 
-  // ── Auditores ───────────────────────────────────────────────────────────────
+  // ── Funções de auditores ──────────────────────────────────────────────────────
+  async function carregarAuditores() {
+    setLoadingAuditores(true)
+    try {
+      const data = await auditoresAPI.list()
+      setAuditores(data || [])
+    } catch (err) {
+      console.error('Erro ao carregar auditores:', err)
+    } finally {
+      setLoadingAuditores(false)
+    }
+  }
+
   function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   }
@@ -237,38 +205,23 @@ export default function AdminOuvidoria() {
 
   async function handleAddAuditor(e) {
     e.preventDefault()
-    if (!isValidEmail(novoEmail)) {
-      showFeedback('error', 'E-mail inválido.')
-      return
-    }
+    if (!isValidEmail(novoEmail)) { showFeedback('error', 'E-mail inválido.'); return }
     if (auditores.length >= MAX_AUDITORES) {
-      showFeedback('error', `Limite de ${MAX_AUDITORES} auditores atingido.`)
-      return
+      showFeedback('error', `Limite de ${MAX_AUDITORES} auditores atingido.`); return
     }
-    if (auditores.find((a) => a.email.toLowerCase() === novoEmail.toLowerCase())) {
-      showFeedback('error', 'Este e-mail já está cadastrado.')
-      return
-    }
-
     setAddingAuditor(true)
     try {
-      // TODO: chamar API real para persistir no backend e configurar envio de e-mail
-      // await auditoresAPI.add({ nome: novoNome, email: novoEmail })
-
-      const novo = {
-        id: Date.now().toString(),
-        nome: novoNome.trim() || novoEmail.split('@')[0],
+      await auditoresAPI.add({
+        nome:  novoNome.trim() || undefined,
         email: novoEmail.trim().toLowerCase(),
-        adicionadoEm: new Date().toISOString(),
-      }
-      const updated = [...auditores, novo]
-      setAuditores(updated)
-      saveAuditores(updated)
+      })
       setNovoEmail('')
       setNovoNome('')
-      showFeedback('success', `${novo.nome} adicionado como auditor.`)
+      showFeedback('success', 'Auditor adicionado com sucesso.')
+      await carregarAuditores()
     } catch (err) {
-      showFeedback('error', 'Erro ao adicionar auditor.')
+      const msg = err.response?.data?.erro || 'Erro ao adicionar auditor.'
+      showFeedback('error', msg)
     } finally {
       setAddingAuditor(false)
     }
@@ -277,11 +230,9 @@ export default function AdminOuvidoria() {
   async function handleRemoveAuditor(id) {
     setRemovingId(id)
     try {
-      // TODO: await auditoresAPI.remove(id)
-      const updated = auditores.filter((a) => a.id !== id)
-      setAuditores(updated)
-      saveAuditores(updated)
+      await auditoresAPI.remove(id)
       showFeedback('success', 'Auditor removido.')
+      await carregarAuditores()
     } catch {
       showFeedback('error', 'Erro ao remover auditor.')
     } finally {
@@ -289,7 +240,9 @@ export default function AdminOuvidoria() {
     }
   }
 
-  // ── LOGIN SCREEN ─────────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // TELA DE LOGIN
+  // ══════════════════════════════════════════════════════════════════════════════
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#0a0a0a] to-[#111111] flex items-center justify-center px-6 relative overflow-hidden">
@@ -298,8 +251,10 @@ export default function AdminOuvidoria() {
         <div className="absolute -top-48 -right-48 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
         <div className="absolute -bottom-48 -left-48 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-md relative z-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          className="w-full max-w-md relative z-10">
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#111111] border border-white/10 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+
             <div className="text-center mb-8">
               <div className="relative inline-block">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-green-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/20">
@@ -314,7 +269,7 @@ export default function AdminOuvidoria() {
               <p className="text-white/50">Área Administrativa — Premium Bebidas</p>
               <div className="flex items-center justify-center gap-2 mt-4">
                 <Badge variant="outline" className="border-green-500/30 text-green-500 bg-green-500/5">
-                  <Shield className="w-3 h-3 mr-1" /> Acesso Restrito
+                  <Shield className="w-3 h-3 mr-1" />Acesso Restrito
                 </Badge>
               </div>
             </div>
@@ -371,9 +326,12 @@ export default function AdminOuvidoria() {
     )
   }
 
-  // ── PAINEL ADMIN ─────────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PAINEL ADMINISTRATIVO
+  // ══════════════════════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
+
       {/* HEADER */}
       <header className="bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
@@ -398,13 +356,15 @@ export default function AdminOuvidoria() {
             </Button>
           </div>
 
-          <button className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
         {mobileMenuOpen && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="md:hidden bg-[#0A0A0A] px-4 pb-4 border-t border-gray-800">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+            className="md:hidden bg-[#0A0A0A] px-4 pb-4 border-t border-gray-800">
             <div className="flex flex-col gap-3 py-3">
               <Link to="/ouvidoria" className="text-white/70 hover:text-white py-2">Home</Link>
               <Link to="/ouvidoria/consultar" className="text-white/70 hover:text-white py-2">Consultar</Link>
@@ -418,6 +378,7 @@ export default function AdminOuvidoria() {
 
       <div className="flex-1 py-12 px-4">
         <div className="max-w-7xl mx-auto">
+
           {/* TÍTULO */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Gerenciar Manifestações</h1>
@@ -430,11 +391,11 @@ export default function AdminOuvidoria() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             {[
-              { label: 'Total', value: stats.total, sub: 'manifestações', cls: 'bg-white border-gray-100 text-gray-900' },
-              { label: 'Abertas', value: stats.abertas, sub: 'aguardando', cls: 'bg-blue-50 border-blue-100 text-blue-700' },
-              { label: 'Em Análise', value: stats.emAnalise, sub: 'em andamento', cls: 'bg-yellow-50 border-yellow-100 text-yellow-700' },
-              { label: 'Respondidas', value: stats.respondidas, sub: 'finalizadas', cls: 'bg-green-50 border-green-100 text-green-700' },
-              { label: 'Encerradas', value: stats.encerradas, sub: 'arquivadas', cls: 'bg-gray-50 border-gray-200 text-gray-700' },
+              { label: 'Total',       value: stats.total,       sub: 'manifestações', cls: 'bg-white border-gray-100 text-gray-900' },
+              { label: 'Abertas',     value: stats.abertas,     sub: 'aguardando',    cls: 'bg-blue-50 border-blue-100 text-blue-700' },
+              { label: 'Em Análise',  value: stats.emAnalise,   sub: 'em andamento',  cls: 'bg-yellow-50 border-yellow-100 text-yellow-700' },
+              { label: 'Respondidas', value: stats.respondidas, sub: 'finalizadas',   cls: 'bg-green-50 border-green-100 text-green-700' },
+              { label: 'Encerradas',  value: stats.encerradas,  sub: 'arquivadas',    cls: 'bg-gray-50 border-gray-200 text-gray-700' },
             ].map(({ label, value, sub, cls }) => (
               <div key={label} className={`rounded-2xl shadow-lg p-6 border hover:shadow-xl transition-all ${cls}`}>
                 <p className="text-sm mb-1 opacity-80">{label}</p>
@@ -447,40 +408,39 @@ export default function AdminOuvidoria() {
           {/* TABS */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
             className="flex gap-2 mb-8 bg-white rounded-2xl p-1.5 shadow-lg border border-gray-100 w-fit">
-            <button
-              onClick={() => setActiveTab('manifestacoes')}
+            <button onClick={() => setActiveTab('manifestacoes')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === 'manifestacoes'
                   ? 'bg-gradient-to-r from-[#00482B] to-[#00703C] text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
+              }`}>
               <MessageSquare className="w-4 h-4" />
               Manifestações
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === 'manifestacoes' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'manifestacoes' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
                 {manifestacoes.length}
               </span>
             </button>
-            <button
-              onClick={() => setActiveTab('auditores')}
+            <button onClick={() => setActiveTab('auditores')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === 'auditores'
                   ? 'bg-gradient-to-r from-[#00482B] to-[#00703C] text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
+              }`}>
               <Shield className="w-4 h-4" />
               Auditores
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === 'auditores' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'auditores' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
                 {auditores.length}/{MAX_AUDITORES}
               </span>
             </button>
           </motion.div>
 
-          {/* ── TAB: MANIFESTAÇÕES ──────────────────────────────────────────── */}
+          {/* ══ TAB: MANIFESTAÇÕES ════════════════════════════════════════════════ */}
           <AnimatePresence mode="wait">
             {activeTab === 'manifestacoes' && (
               <motion.div key="manifestacoes" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+
                 {/* Filtros */}
                 <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
@@ -509,7 +469,7 @@ export default function AdminOuvidoria() {
                   </div>
                 </div>
 
-                {/* Lista */}
+                {/* Lista de manifestações */}
                 {loadingManifestacoes ? (
                   <div className="bg-white rounded-2xl shadow-lg p-16 text-center border border-gray-100">
                     <Loader2 className="w-12 h-12 animate-spin mx-auto text-[#00703C] mb-4" />
@@ -551,13 +511,15 @@ export default function AdminOuvidoria() {
                                 </Button>
                               </div>
                             </div>
+
                             <Separator className="my-4 bg-gray-200" />
+
                             <div className="grid md:grid-cols-4 gap-4 text-sm">
                               {[
-                                { label: 'Tipo', icon: FileText, value: formatarTipo(manifestacao.tipo) },
-                                { label: 'Data', icon: Clock, value: formatarData(manifestacao.datacriacao) },
-                                { label: 'Solicitante', icon: Users, value: manifestacao.anonima ? <span className="text-[#00703C]">ANÔNIMO</span> : (manifestacao.nome || 'Não informado') },
-                                { label: 'Contato', icon: MessageSquare, value: manifestacao.anonima ? '---' : (manifestacao.email || 'Não informado') },
+                                { label: 'Tipo',        icon: FileText,      value: formatarTipo(manifestacao.tipo) },
+                                { label: 'Data',        icon: Clock,         value: formatarData(manifestacao.datacriacao) },
+                                { label: 'Solicitante', icon: Users,         value: manifestacao.anonima ? <span className="text-[#00703C]">ANÔNIMO</span> : (manifestacao.nome || 'Não informado') },
+                                { label: 'Contato',     icon: MessageSquare, value: manifestacao.anonima ? '---' : (manifestacao.email || 'Não informado') },
                               ].map(({ label, icon: Icon, value }) => (
                                 <div key={label} className="bg-gray-50 rounded-xl p-3">
                                   <p className="text-gray-500 text-xs mb-1 flex items-center gap-1"><Icon className="w-3 h-3" />{label}</p>
@@ -565,6 +527,7 @@ export default function AdminOuvidoria() {
                                 </div>
                               ))}
                             </div>
+
                             <div className="mt-4 pt-4 border-t border-gray-200">
                               <p className="text-sm text-gray-600 mb-2 font-medium">Descrição:</p>
                               <div className="bg-gray-50 rounded-xl p-4">
@@ -580,12 +543,12 @@ export default function AdminOuvidoria() {
               </motion.div>
             )}
 
-            {/* ── TAB: AUDITORES ──────────────────────────────────────────────── */}
+            {/* ══ TAB: AUDITORES ════════════════════════════════════════════════════ */}
             {activeTab === 'auditores' && (
               <motion.div key="auditores" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                 className="max-w-2xl">
 
-                {/* Feedback toast */}
+                {/* Toast de feedback */}
                 <AnimatePresence>
                   {auditorFeedback && (
                     <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
@@ -602,7 +565,7 @@ export default function AdminOuvidoria() {
                   )}
                 </AnimatePresence>
 
-                {/* Info banner */}
+                {/* Banner informativo */}
                 <div className="bg-gradient-to-r from-[#00482B]/10 to-[#00703C]/5 border border-[#00482B]/20 rounded-2xl p-5 mb-8 flex gap-4">
                   <div className="p-3 bg-[#00482B]/10 rounded-xl shrink-0">
                     <Bell className="w-6 h-6 text-[#00482B]" />
@@ -610,20 +573,19 @@ export default function AdminOuvidoria() {
                   <div>
                     <h3 className="font-semibold text-[#00482B] mb-1">Como funciona?</h3>
                     <p className="text-sm text-gray-700 leading-relaxed">
-                      Auditores cadastrados recebem uma <strong>cópia automática por e-mail</strong> de todas as manifestações enviadas ao sistema.
-                      Você pode adicionar até <strong>{MAX_AUDITORES} auditores</strong>. Para integrar o envio real, conecte seu serviço de e-mail na API.
+                      Auditores cadastrados recebem uma <strong>cópia automática por e-mail</strong> de todas as
+                      manifestações enviadas ao sistema. Você pode adicionar até <strong>{MAX_AUDITORES} auditores</strong>.
                     </p>
                   </div>
                 </div>
 
-                {/* Formulário de adição */}
+                {/* Formulário */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
                   <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
                     <UserPlus className="w-5 h-5 text-[#00482B]" />
                     Adicionar Auditor
                     <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full ${
-                      auditores.length >= MAX_AUDITORES ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'
-                    }`}>
+                      auditores.length >= MAX_AUDITORES ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'}`}>
                       {auditores.length}/{MAX_AUDITORES} slots
                     </span>
                   </h2>
@@ -631,41 +593,35 @@ export default function AdminOuvidoria() {
                   <form onSubmit={handleAddAuditor} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-sm font-medium text-gray-700">Nome <span className="text-gray-400">(opcional)</span></Label>
+                        <Label className="text-sm font-medium text-gray-700">
+                          Nome <span className="text-gray-400">(opcional)</span>
+                        </Label>
                         <div className="relative">
                           <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <Input
-                            type="text"
-                            value={novoNome}
-                            onChange={(e) => setNovoNome(e.target.value)}
+                          <Input type="text" value={novoNome} onChange={(e) => setNovoNome(e.target.value)}
                             placeholder="Ex: João Silva"
                             className="pl-10 h-11 border-gray-300 focus:border-[#00703C] focus:ring-[#00703C]/20"
-                            disabled={auditores.length >= MAX_AUDITORES || addingAuditor}
-                          />
+                            disabled={auditores.length >= MAX_AUDITORES || addingAuditor} />
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-sm font-medium text-gray-700">E-mail <span className="text-red-500">*</span></Label>
+                        <Label className="text-sm font-medium text-gray-700">
+                          E-mail <span className="text-red-500">*</span>
+                        </Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <Input
-                            type="email"
-                            value={novoEmail}
-                            onChange={(e) => setNovoEmail(e.target.value)}
+                          <Input type="email" value={novoEmail} onChange={(e) => setNovoEmail(e.target.value)}
                             placeholder="auditor@empresa.com"
                             className="pl-10 h-11 border-gray-300 focus:border-[#00703C] focus:ring-[#00703C]/20"
                             disabled={auditores.length >= MAX_AUDITORES || addingAuditor}
-                            required
-                          />
+                            required />
                         </div>
                       </div>
                     </div>
 
-                    <Button
-                      type="submit"
+                    <Button type="submit"
                       disabled={auditores.length >= MAX_AUDITORES || addingAuditor || !novoEmail}
-                      className="w-full bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white h-11 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-                    >
+                      className="w-full bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white h-11 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50">
                       {addingAuditor
                         ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Adicionando...</span>
                         : <span className="flex items-center gap-2"><UserPlus className="w-4 h-4" />Adicionar Auditor</span>}
@@ -674,28 +630,33 @@ export default function AdminOuvidoria() {
                     {auditores.length >= MAX_AUDITORES && (
                       <p className="text-xs text-center text-red-500 flex items-center justify-center gap-1">
                         <AlertCircle className="w-3 h-3" />
-                        Limite máximo de {MAX_AUDITORES} auditores atingido. Remova um para adicionar outro.
+                        Limite máximo atingido. Remova um auditor para adicionar outro.
                       </p>
                     )}
                   </form>
                 </div>
 
                 {/* Lista de auditores */}
-                <div className="space-y-3">
-                  {auditores.length === 0 ? (
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <BellOff className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <h3 className="font-semibold text-gray-700 mb-1">Nenhum auditor cadastrado</h3>
-                      <p className="text-sm text-gray-500">Adicione um e-mail acima para começar a receber cópias das manifestações.</p>
+                {loadingAuditores ? (
+                  <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-100">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#00703C] mb-3" />
+                    <p className="text-gray-500">Carregando auditores...</p>
+                  </div>
+                ) : auditores.length === 0 ? (
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <BellOff className="w-8 h-8 text-gray-400" />
                     </div>
-                  ) : (
-                    auditores.map((auditor, i) => (
+                    <h3 className="font-semibold text-gray-700 mb-1">Nenhum auditor cadastrado</h3>
+                    <p className="text-sm text-gray-500">Adicione um e-mail acima para começar a receber cópias das manifestações.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {auditores.map((auditor, i) => (
                       <motion.div key={auditor.id}
                         initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
                         className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 flex items-center gap-4 hover:shadow-xl transition-all">
-                        {/* Avatar */}
+
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00482B] to-[#00703C] flex items-center justify-center shrink-0 shadow-md shadow-green-900/20">
                           <span className="text-white font-bold text-lg">
                             {auditor.nome.charAt(0).toUpperCase()}
@@ -719,35 +680,19 @@ export default function AdminOuvidoria() {
                           <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
                             <Bell className="w-3 h-3 mr-1" />Ativo
                           </Badge>
-                          <button
-                            onClick={() => handleRemoveAuditor(auditor.id)}
+                          <button onClick={() => handleRemoveAuditor(auditor.id)}
                             disabled={removingId === auditor.id}
                             className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
-                            title="Remover auditor"
-                          >
+                            title="Remover auditor">
                             {removingId === auditor.id
                               ? <Loader2 className="w-4 h-4 animate-spin" />
                               : <Trash2 className="w-4 h-4" />}
                           </button>
                         </div>
                       </motion.div>
-                    ))
-                  )}
-                </div>
-
-                {/* Nota de integração */}
-                <div className="mt-8 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div className="text-sm text-amber-800">
-                    <p className="font-semibold mb-1">Integração de e-mail pendente</p>
-                    <p className="leading-relaxed">
-                      Os e-mails estão sendo salvos localmente. Para que os auditores recebam notificações reais,
-                      conecte um serviço de e-mail (ex: SendGrid, Nodemailer) na função{' '}
-                      <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">handleAddAuditor</code>{' '}
-                      e na lógica de criação de manifestações.
-                    </p>
+                    ))}
                   </div>
-                </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -763,6 +708,7 @@ export default function AdminOuvidoria() {
             <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }} onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+
               <div className="bg-gradient-to-r from-[#00482B] to-[#00703C] px-6 py-5 flex items-center justify-between sticky top-0">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-white/10 rounded-lg"><Edit className="w-5 h-5 text-white" /></div>
@@ -777,10 +723,10 @@ export default function AdminOuvidoria() {
                 <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-gray-200">
                   <div className="grid md:grid-cols-2 gap-4">
                     {[
-                      { label: 'Protocolo', icon: FileText, value: <span className="font-mono font-bold text-[#00482B] text-lg">{manifestacaoSelecionada.protocolo}</span> },
-                      { label: 'Tipo', icon: FileText, value: formatarTipo(manifestacaoSelecionada.tipo) },
-                      { label: 'Data de Criação', icon: Clock, value: formatarData(manifestacaoSelecionada.datacriacao) },
-                      { label: 'Solicitante', icon: Users, value: manifestacaoSelecionada.anonima ? 'ANÔNIMO' : manifestacaoSelecionada.nome },
+                      { label: 'Protocolo',      icon: FileText, value: <span className="font-mono font-bold text-[#00482B] text-lg">{manifestacaoSelecionada.protocolo}</span> },
+                      { label: 'Tipo',           icon: FileText, value: formatarTipo(manifestacaoSelecionada.tipo) },
+                      { label: 'Data de Criação', icon: Clock,   value: formatarData(manifestacaoSelecionada.datacriacao) },
+                      { label: 'Solicitante',    icon: Users,    value: manifestacaoSelecionada.anonima ? 'ANÔNIMO' : manifestacaoSelecionada.nome },
                     ].map(({ label, icon: Icon, value }) => (
                       <div key={label} className="flex items-start gap-3">
                         <div className="p-2 bg-[#00482B]/10 rounded-lg"><Icon className="w-4 h-4 text-[#00482B]" /></div>
@@ -798,7 +744,8 @@ export default function AdminOuvidoria() {
                     <RefreshCw className="w-4 h-4 text-[#00482B]" />Status da Manifestação *
                   </label>
                   <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer text-gray-900"
-                    value={formEdicao.status} onChange={(e) => setFormEdicao({ ...formEdicao, status: e.target.value })} disabled={salvando}>
+                    value={formEdicao.status} onChange={(e) => setFormEdicao({ ...formEdicao, status: e.target.value })}
+                    disabled={salvando}>
                     {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
@@ -815,7 +762,8 @@ export default function AdminOuvidoria() {
                 <Separator className="bg-gray-200" />
 
                 <div className="flex gap-3 pt-2">
-                  <Button onClick={fecharModal} variant="outline" className="flex-1 rounded-xl h-12 border-2 hover:bg-gray-50 transition-all" disabled={salvando}>
+                  <Button onClick={fecharModal} variant="outline"
+                    className="flex-1 rounded-xl h-12 border-2 hover:bg-gray-50 transition-all" disabled={salvando}>
                     <X className="w-4 h-4 mr-2" />Cancelar
                   </Button>
                   <Button onClick={salvarAlteracoes}
