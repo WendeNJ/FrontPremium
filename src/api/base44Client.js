@@ -56,6 +56,12 @@ export function updateConfiguracaoOuvidoria(data) {
 // ============================================
 // 📌 MANIFESTAÇÕES API (objeto completo)
 // ============================================
+export const auditoresAPI = {
+  list:   ()           => api.get("/api/ouvidoria/auditores").then(res => res.data),
+  add:    (data)       => api.post("/api/ouvidoria/auditores", data).then(res => res.data),
+  remove: (id)         => api.delete(`/api/ouvidoria/auditores/${id}`).then(res => res.data),
+};
+
 export const manifestacoesAPI = {
   list: () => api.get("/manifestacoes").then(res => res.data),
   consultarPorProtocolo: (protocolo) => api.get(`/manifestacoes/protocolo/${protocolo}`).then(res => res.data),
@@ -188,6 +194,12 @@ async function request(endpoint, method = "GET", body = null) {
 // ============================================
 // 📌 EXPORT COMPATÍVEL COM CÓDIGO ANTIGO (base44)
 // ============================================
+Auditores: {
+  list:   ()     => request(`/api/ouvidoria/auditores`),
+  add:    (data) => request(`/api/ouvidoria/auditores`, "POST", data),
+  remove: (id)   => request(`/api/ouvidoria/auditores/${id}`, "DELETE"),
+},
+
 export const base44 = {
   entities: {
     Unidades: {
