@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Upload, FileText, ArrowLeft, CheckCircle, Menu, X, User, Mail, Phone, Building2, Tag, MessageSquare, Shield, Paperclip, Trash2, File, ImageIcon, FileArchive } from 'lucide-react'
 
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
-.
+
 // Ícone baseado na extensão do arquivo
 function FileIcon({ name }) {
   const ext = name?.split('.').pop()?.toLowerCase()
