@@ -39,6 +39,7 @@ export default function NovaManifestacao() {
     categoriaId: '',
     telefone: '',
     anonima: false,
+    tipo: '',
   })
 
   const [arquivo, setArquivo] = useState(null)
@@ -107,7 +108,7 @@ export default function NovaManifestacao() {
         categoriaId: form.categoriaId,
         telefone: form.telefone || '',
         anonima: form.anonima,
-        tipo: 'RECLAMACAO'
+        tipo: form.tipo,
       }
 
       if (arquivo) {
@@ -119,7 +120,7 @@ export default function NovaManifestacao() {
         formData.append('categoriaId', form.categoriaId)
         formData.append('telefone', form.telefone || '')
         formData.append('anonima', form.anonima.toString())
-        formData.append('tipo', 'RECLAMACAO')
+        formData.append('tipo', form.tipo)
         formData.append('arquivo', arquivo)
         res = await criarManifestacaoComArquivo(formData)
       } else {
@@ -225,7 +226,7 @@ export default function NovaManifestacao() {
                 <Link to="/ouvidoria"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Início</Link>
               </Button>
               <Button
-                onClick={() => { setProtocolo(null); setForm({ nome: '', email: '', descricao: '', unidadeId: '', categoriaId: '', telefone: '', anonima: false }); setArquivo(null) }}
+                onClick={() => { setProtocolo(null); setForm({ nome: '', email: '', descricao: '', unidadeId: '', categoriaId: '', telefone: '', anonima: false, tipo: '' }); setArquivo(null) }}
                 className="flex-1 bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white rounded-full shadow-lg hover:shadow-xl transition-all"
               >
                 Nova Manifestação
@@ -308,7 +309,29 @@ export default function NovaManifestacao() {
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 pb-2 border-b border-gray-200">
                   <MessageSquare className="w-5 h-5 text-[#00703C]" />Detalhes da Manifestação
                 </h3>
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-3 gap-6">
+                  {/* TIPO DE MANIFESTAÇÃO */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-gray-400" />Tipo *
+                    </label>
+                    <select
+                      name="tipo"
+                      value={form.tipo}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none bg-gray-50 hover:bg-white focus:bg-white appearance-none cursor-pointer"
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Selecione o tipo</option>
+                      <option value="RECLAMACAO">Reclamação</option>
+                      <option value="DENUNCIA">Denúncia</option>
+                      <option value="SUGESTAO">Sugestão</option>
+                      <option value="ELOGIO">Elogio</option>
+                      <option value="SOLICITACAO">Solicitação</option>
+                    </select>
+                  </div>
+
+                  {/* CATEGORIA */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><Tag className="w-4 h-4 text-gray-400" />Categoria *</label>
                     <select name="categoriaId" value={form.categoriaId} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none bg-gray-50 hover:bg-white focus:bg-white appearance-none cursor-pointer" onChange={handleChange} required disabled={loadingDados}>
@@ -316,6 +339,8 @@ export default function NovaManifestacao() {
                       {categorias.map((c) => <option key={c.id} value={c.id}>{c.name || c.descricao}</option>)}
                     </select>
                   </div>
+
+                  {/* UNIDADE */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><Building2 className="w-4 h-4 text-gray-400" />Unidade *</label>
                     <select name="unidadeId" value={form.unidadeId} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none bg-gray-50 hover:bg-white focus:bg-white appearance-none cursor-pointer" onChange={handleChange} required disabled={loadingDados}>
@@ -332,7 +357,7 @@ export default function NovaManifestacao() {
               </div>
 
               {/* ========================
-                  SEÇÃO ANEXOS REDESENHADA
+                  SEÇÃO ANEXOS
                   ======================== */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 pb-2 border-b border-gray-200">
@@ -415,7 +440,7 @@ export default function NovaManifestacao() {
                       transition={{ duration: 0.25 }}
                       className="rounded-2xl border border-[#00703C]/20 bg-gradient-to-r from-[#00482B]/5 to-white overflow-hidden"
                     >
-                      {/* Barra de progresso decorativa (estática, indica "pronto") */}
+                      {/* Barra de progresso decorativa */}
                       <div className="h-1 w-full bg-gray-100">
                         <motion.div
                           initial={{ width: 0 }}
@@ -444,13 +469,11 @@ export default function NovaManifestacao() {
 
                         {/* Ações */}
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {/* Trocar arquivo */}
                           <label htmlFor="file-upload-replace" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-[#00703C] hover:text-[#00703C] transition-colors">
                             <Upload className="w-3.5 h-3.5" /> Trocar
                           </label>
                           <input type="file" id="file-upload-replace" onChange={handleFileChange} className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip" />
 
-                          {/* Remover */}
                           <button
                             type="button"
                             onClick={() => setArquivo(null)}
@@ -464,9 +487,6 @@ export default function NovaManifestacao() {
                   )}
                 </AnimatePresence>
               </div>
-              {/* ========================
-                  FIM SEÇÃO ANEXOS
-                  ======================== */}
 
               {/* Botão */}
               <div className="pt-6">
