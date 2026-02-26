@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8081"; // ✅ CORRETO
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8081";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // 🔥 ESSENCIAL para cookies de autenticação
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -28,8 +28,9 @@ export function criarManifestacao(data) {
   return api.post("/manifestacoes", data);
 }
 
+// ✅ CORRIGIDO: aponta para /com-arquivo
 export function criarManifestacaoComArquivo(formData) {
-  return api.post("/manifestacoes", formData, {
+  return api.post("/manifestacoes/com-arquivo", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -40,7 +41,6 @@ export function consultarPorProtocolo(protocolo) {
   return api.get(`/manifestacoes/protocolo/${protocolo}`);
 }
 
-// 🔥🔥🔥 NOVA FUNÇÃO - ATUALIZAR STATUS POR PROTOCOLO
 export function atualizarStatusPorProtocolo(protocolo, status) {
   return api.patch(`/manifestacoes/${protocolo}/status?status=${status}`);
 }
@@ -60,7 +60,8 @@ export const manifestacoesAPI = {
   list: () => api.get("/manifestacoes").then(res => res.data),
   consultarPorProtocolo: (protocolo) => api.get(`/manifestacoes/protocolo/${protocolo}`).then(res => res.data),
   create: (data) => api.post("/manifestacoes", data).then(res => res.data),
-  createComArquivo: (formData) => api.post("/manifestacoes", formData, {
+  // ✅ CORRIGIDO: aponta para /com-arquivo
+  createComArquivo: (formData) => api.post("/manifestacoes/com-arquivo", formData, {
     headers: { "Content-Type": "multipart/form-data" }
   }).then(res => res.data),
   atualizarStatus: (protocolo, status) =>
@@ -102,8 +103,6 @@ export const usersAPI = {
   create: (data) => api.post("/users", data).then(res => res.data),
   update: (id, data) => api.put(`/users/${id}`, data).then(res => res.data),
   delete: (id) => api.delete(`/users/${id}`),
-
-  // Autenticação
   login: (credentials) => api.post("/users/login", credentials).then(res => res.data),
   logout: () => api.post("/users/logout"),
   testAuth: () => api.get("/users/test/administrator").then(res => res.data),
@@ -132,7 +131,7 @@ export const cardMuralAPI = {
 };
 
 // ============================================
-// 📌 NOTÍCIAS 🔥 CONECTADO!
+// 📌 NOTÍCIAS
 // ============================================
 export const noticiasAPI = {
   list: () => api.get("/api/noticias").then(res => res.data),
@@ -158,7 +157,7 @@ export const estatisticasAPI = {
 };
 
 // ============================================
-// 📌 AUDITORES ✅
+// 📌 AUDITORES
 // ============================================
 export const auditoresAPI = {
   list:   ()     => api.get("/api/ouvidoria/auditores").then(res => res.data),
@@ -228,11 +227,23 @@ export const base44 = {
       delete: (id) => request(`/respostas/${id}`, "DELETE"),
     },
 
-    // 🔥🔥🔥 MANIFESTAÇÕES - COMPLETAMENTE ATUALIZADO
     Manifestacoes: {
       list: () => request(`/manifestacoes`),
       consultarPorProtocolo: (protocolo) => request(`/manifestacoes/protocolo/${protocolo}`),
       create: (data) => request(`/manifestacoes`, "POST", data),
+      // ✅ CORRIGIDO: aponta para /com-arquivo
+      createComArquivo: async (formData) => {
+        const res = await fetch(`${API_BASE_URL}/manifestacoes/com-arquivo`, {
+          method: "POST",
+          credentials: "include",
+          body: formData, // sem Content-Type: o browser define o boundary automaticamente
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Erro na API: ${res.status} - ${text}`);
+        }
+        return res.json();
+      },
       atualizarStatus: (protocolo, status) =>
         request(`/manifestacoes/${protocolo}/status?status=${status}`, "PATCH"),
       update: (id, data) => {
@@ -259,7 +270,10 @@ export const base44 = {
       delete: (id) => request(`/api/noticias/${id}`, "DELETE"),
     },
 
-    // ✅ AUDITORES
+    Estatisticas: {
+      get: () => request(`/api/estatisticas`),
+    },
+
     Auditores: {
       list:   ()     => request(`/api/ouvidoria/auditores`),
       add:    (data) => request(`/api/ouvidoria/auditores`, "POST", data),
