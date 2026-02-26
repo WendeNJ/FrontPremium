@@ -4,7 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { criarManifestacao, criarManifestacaoComArquivo } from '@/api/ouvidoriaApi'
 import { base44 } from '@/api/base44Client'
 import { Button } from '@/components/ui/button'
-import { Upload, FileText, ArrowLeft, CheckCircle, Menu, X, User, Mail, Phone, Building2, Tag, MessageSquare, Shield, Paperclip, Trash2, File, ImageIcon, FileArchive } from 'lucide-react'
+import { 
+  Upload, FileText, ArrowLeft, CheckCircle, Menu, X, User, Mail, 
+  Phone, Building2, Tag, MessageSquare, Shield, Paperclip, Trash2, 
+  File, ImageIcon, FileArchive, ChevronRight, Layers, Info 
+} from 'lucide-react'
 
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
 
@@ -45,9 +49,13 @@ export default function NovaManifestacao() {
   const [arquivo, setArquivo] = useState(null)
   const [unidades, setUnidades] = useState([])
   const [categorias, setCategorias] = useState([])
+  const [categoriasPorTipo, setCategoriasPorTipo] = useState({})
+  const [subcategorias, setSubcategorias] = useState([])
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState(null)
   const [protocolo, setProtocolo] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadingDados, setLoadingDados] = useState(true)
+  const [etapaCategoria, setEtapaCategoria] = useState('tipo') // 'tipo', 'categoria', 'subcategoria'
 
   useEffect(() => {
     async function carregarDados() {
@@ -57,7 +65,22 @@ export default function NovaManifestacao() {
           base44.entities.Categorias.list(),
         ])
         setUnidades(unidadesData || [])
-        setCategorias(categoriasData || [])
+        
+        // Processar categorias para hierarquia
+        const categorias = categoriasData || []
+        setCategorias(categorias)
+        
+        // Agrupar por tipo
+        const agrupadas = {}
+        categorias.forEach(cat => {
+          const tipo = cat.tipoManifestacao || 'OUTROS'
+          if (!agrupadas[tipo]) agrupadas[tipo] = []
+          if (!cat.categoriaPaiId) { // Apenas categorias principais
+            agrupadas[tipo].push(cat)
+          }
+        })
+        setCategoriasPorTipo(agrupadas)
+        
       } catch (err) {
         console.error('Erro ao carregar dados:', err)
         alert('Erro ao carregar unidades ou categorias')
@@ -68,8 +91,65 @@ export default function NovaManifestacao() {
     carregarDados()
   }, [])
 
+  // Quando selecionar uma categoria principal, buscar subcategorias
+  useEffect(() => {
+    if (form.categoriaId) {
+      const cat = categorias.find(c => c.id === form.categoriaId)
+      setCategoriaSelecionada(cat)
+      
+      // Buscar subcategorias
+      const subs = categorias.filter(c => c.categoriaPaiId === cat?.id)
+      setSubcategorias(subs)
+      
+      // Se tiver subcategorias, avançar para etapa de subcategoria
+      if (subs.length > 0) {
+        setEtapaCategoria('subcategoria')
+      }
+      
+      // Se a categoria define o tipo, atualizar o tipo no form
+      if (cat?.tipoManifestacao) {
+        setForm(prev => ({ ...prev, tipo: cat.tipoManifestacao }))
+      }
+    } else {
+      setCategoriaSelecionada(null)
+      setSubcategorias([])
+    }
+  }, [form.categoriaId, categorias])
+
+  // Quando mudar o tipo, resetar categoria e avançar para etapa de categoria
+  useEffect(() => {
+    if (form.tipo) {
+      setForm(prev => ({ ...prev, categoriaId: '' }))
+      setCategoriaSelecionada(null)
+      setSubcategorias([])
+      setEtapaCategoria('categoria')
+    }
+  }, [form.tipo])
+
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  function handleTipoChange(tipo) {
+    setForm({ ...form, tipo, categoriaId: '' })
+  }
+
+  function handleCategoriaChange(categoriaId) {
+    setForm({ ...form, categoriaId })
+  }
+
+  function handleSubcategoriaChange(subcategoriaId) {
+    setForm({ ...form, categoriaId: subcategoriaId })
+  }
+
+  function voltarEtapa() {
+    if (etapaCategoria === 'subcategoria') {
+      setEtapaCategoria('categoria')
+      setForm(prev => ({ ...prev, categoriaId: categoriaSelecionada?.id || '' }))
+    } else if (etapaCategoria === 'categoria') {
+      setEtapaCategoria('tipo')
+      setForm(prev => ({ ...prev, tipo: '' }))
+    }
   }
 
   function validarArquivo(file) {
@@ -108,7 +188,7 @@ export default function NovaManifestacao() {
         categoriaId: form.categoriaId,
         telefone: form.telefone || '',
         anonima: form.anonima,
-        tipo: form.tipo,
+        tipo: categoriaSelecionada?.tipoManifestacao || form.tipo,
       }
 
       if (arquivo) {
@@ -120,7 +200,7 @@ export default function NovaManifestacao() {
         formData.append('categoriaId', form.categoriaId)
         formData.append('telefone', form.telefone || '')
         formData.append('anonima', form.anonima.toString())
-        formData.append('tipo', form.tipo)
+        formData.append('tipo', dadosParaEnviar.tipo)
         formData.append('arquivo', arquivo)
         res = await criarManifestacaoComArquivo(formData)
       } else {
@@ -134,6 +214,204 @@ export default function NovaManifestacao() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Componente de seleção de categoria hierárquica
+  const SelecaoCategoria = () => {
+    if (loadingDados) {
+      return (
+        <div className="text-center py-8">
+          <div className="w-8 h-8 border-4 border-[#00482B]/30 border-t-[#00482B] rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Carregando categorias...</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Breadcrumb de navegação */}
+        <div className="flex items-center gap-2 text-sm">
+          <button
+            type="button"
+            onClick={() => setEtapaCategoria('tipo')}
+            className={`px-3 py-1 rounded-full transition-colors ${
+              etapaCategoria === 'tipo' 
+                ? 'bg-[#00482B] text-white' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Tipo
+          </button>
+          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <button
+            type="button"
+            onClick={() => form.tipo && setEtapaCategoria('categoria')}
+            className={`px-3 py-1 rounded-full transition-colors ${
+              etapaCategoria === 'categoria' 
+                ? 'bg-[#00482B] text-white' 
+                : form.tipo 
+                  ? 'text-gray-600 hover:bg-gray-100' 
+                  : 'text-gray-300 cursor-not-allowed'
+            }`}
+            disabled={!form.tipo}
+          >
+            Categoria
+          </button>
+          {subcategorias.length > 0 && (
+            <>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <button
+                type="button"
+                onClick={() => form.categoriaId && setEtapaCategoria('subcategoria')}
+                className={`px-3 py-1 rounded-full transition-colors ${
+                  etapaCategoria === 'subcategoria' 
+                    ? 'bg-[#00482B] text-white' 
+                    : form.categoriaId 
+                      ? 'text-gray-600 hover:bg-gray-100' 
+                      : 'text-gray-300 cursor-not-allowed'
+                }`}
+                disabled={!form.categoriaId}
+              >
+                Subcategoria
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Conteúdo da etapa */}
+        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+          {etapaCategoria === 'tipo' && (
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Selecione o tipo de manifestação:
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {['RECLAMACAO', 'DENUNCIA', 'SUGESTAO', 'ELOGIO', 'SOLICITACAO'].map((tipo) => (
+                  <button
+                    key={tipo}
+                    type="button"
+                    onClick={() => handleTipoChange(tipo)}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      form.tipo === tipo
+                        ? 'border-[#00482B] bg-[#00482B]/5'
+                        : 'border-gray-200 bg-white hover:border-[#00703C]/50'
+                    }`}
+                  >
+                    <Tag className={`w-5 h-5 mx-auto mb-2 ${
+                      form.tipo === tipo ? 'text-[#00482B]' : 'text-gray-400'
+                    }`} />
+                    <span className={`text-sm font-medium ${
+                      form.tipo === tipo ? 'text-[#00482B]' : 'text-gray-600'
+                    }`}>
+                      {tipo.charAt(0) + tipo.slice(1).toLowerCase()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {etapaCategoria === 'categoria' && form.tipo && (
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Selecione uma categoria para {form.tipo.toLowerCase()}:
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {categoriasPorTipo[form.tipo]?.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleCategoriaChange(cat.id)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      form.categoriaId === cat.id
+                        ? 'border-[#00482B] bg-[#00482B]/5'
+                        : 'border-gray-200 bg-white hover:border-[#00703C]/50'
+                    }`}
+                  >
+                    <h4 className={`font-semibold mb-1 ${
+                      form.categoriaId === cat.id ? 'text-[#00482B]' : 'text-gray-800'
+                    }`}>
+                      {cat.nome}
+                    </h4>
+                    <p className="text-xs text-gray-500 line-clamp-2">
+                      {cat.descricao}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {etapaCategoria === 'subcategoria' && subcategorias.length > 0 && (
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Selecione uma subcategoria:
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {subcategorias.map((sub) => (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => handleSubcategoriaChange(sub.id)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      form.categoriaId === sub.id
+                        ? 'border-[#00482B] bg-[#00482B]/5'
+                        : 'border-gray-200 bg-white hover:border-[#00703C]/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Layers className={`w-4 h-4 ${
+                        form.categoriaId === sub.id ? 'text-[#00482B]' : 'text-gray-400'
+                      }`} />
+                      <h4 className={`font-semibold ${
+                        form.categoriaId === sub.id ? 'text-[#00482B]' : 'text-gray-800'
+                      }`}>
+                        {sub.nome}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-gray-500 pl-6">
+                      {sub.descricao || 'Sem descrição'}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Informação da categoria selecionada */}
+        {categoriaSelecionada && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-800">
+                  Categoria selecionada:
+                </p>
+                <p className="text-sm text-blue-600">
+                  {categoriaSelecionada.nome}
+                  {categoriaSelecionada.categoriaPaiId && (
+                    <span className="text-xs text-blue-400 ml-2">
+                      (Subcategoria)
+                    </span>
+                  )}
+                </p>
+                {categoriaSelecionada.descricao && (
+                  <p className="text-xs text-blue-600/70 mt-1">
+                    {categoriaSelecionada.descricao}
+                  </p>
+                )}
+                {categoriaSelecionada.tipoManifestacao && (
+                  <p className="text-xs text-blue-500 mt-1">
+                    Tipo: {categoriaSelecionada.tipoManifestacao.toLowerCase()}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   const Header = () => (
@@ -226,7 +504,7 @@ export default function NovaManifestacao() {
                 <Link to="/ouvidoria"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Início</Link>
               </Button>
               <Button
-                onClick={() => { setProtocolo(null); setForm({ nome: '', email: '', descricao: '', unidadeId: '', categoriaId: '', telefone: '', anonima: false, tipo: '' }); setArquivo(null) }}
+                onClick={() => { setProtocolo(null); setForm({ nome: '', email: '', descricao: '', unidadeId: '', categoriaId: '', telefone: '', anonima: false, tipo: '' }); setArquivo(null); setEtapaCategoria('tipo') }}
                 className="flex-1 bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white rounded-full shadow-lg hover:shadow-xl transition-all"
               >
                 Nova Manifestação
@@ -309,56 +587,62 @@ export default function NovaManifestacao() {
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 pb-2 border-b border-gray-200">
                   <MessageSquare className="w-5 h-5 text-[#00703C]" />Detalhes da Manifestação
                 </h3>
-                <div className="grid md:grid-cols-3 gap-6">
-                  {/* TIPO DE MANIFESTAÇÃO */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-gray-400" />Tipo *
-                    </label>
-                    <select
-                      name="tipo"
-                      value={form.tipo}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none bg-gray-50 hover:bg-white focus:bg-white appearance-none cursor-pointer"
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Selecione o tipo</option>
-                      <option value="RECLAMACAO">Reclamação</option>
-                      <option value="DENUNCIA">Denúncia</option>
-                      <option value="SUGESTAO">Sugestão</option>
-                      <option value="ELOGIO">Elogio</option>
-                      <option value="SOLICITACAO">Solicitação</option>
-                    </select>
-                  </div>
-
-                  {/* CATEGORIA */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><Tag className="w-4 h-4 text-gray-400" />Categoria *</label>
-                    <select name="categoriaId" value={form.categoriaId} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none bg-gray-50 hover:bg-white focus:bg-white appearance-none cursor-pointer" onChange={handleChange} required disabled={loadingDados}>
-                      <option value="">{loadingDados ? 'Carregando...' : 'Selecione uma categoria'}</option>
-                      {categorias.map((c) => <option key={c.id} value={c.id}>{c.name || c.descricao}</option>)}
-                    </select>
-                  </div>
-
-                  {/* UNIDADE */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><Building2 className="w-4 h-4 text-gray-400" />Unidade *</label>
-                    <select name="unidadeId" value={form.unidadeId} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none bg-gray-50 hover:bg-white focus:bg-white appearance-none cursor-pointer" onChange={handleChange} required disabled={loadingDados}>
-                      <option value="">{loadingDados ? 'Carregando...' : 'Selecione uma unidade'}</option>
-                      {unidades.map((u) => <option key={u.id} value={u.id}>{u.name || u.descricao}</option>)}
-                    </select>
-                  </div>
+                
+                {/* NOVO: Seleção de Categoria Hierárquica */}
+                <div className="mb-6">
+                  <SelecaoCategoria />
                 </div>
+
+                {/* Campos ocultos para validação */}
+                <input type="hidden" name="tipo" value={form.tipo} />
+                <input type="hidden" name="categoriaId" value={form.categoriaId} />
+
+                {/* UNIDADE */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-gray-400" />Descreva sua manifestação *</label>
-                  <textarea name="descricao" placeholder="Descreva detalhadamente sua manifestação. Quanto mais informações, melhor poderemos atendê-lo(a)." className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none resize-none bg-gray-50 hover:bg-white focus:bg-white" rows={6} onChange={handleChange} value={form.descricao} required />
-                  <p className="text-xs text-gray-500 mt-1 text-right">{form.descricao.length} caracteres</p>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-gray-400" />Unidade *
+                  </label>
+                  <select
+                    name="unidadeId"
+                    value={form.unidadeId}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none bg-gray-50 hover:bg-white focus:bg-white appearance-none cursor-pointer"
+                    onChange={handleChange}
+                    required
+                    disabled={loadingDados}
+                  >
+                    <option value="">
+                      {loadingDados ? 'Carregando...' : 'Selecione uma unidade'}
+                    </option>
+                    {unidades.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name || u.descricao}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* DESCRIÇÃO */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-gray-400" />
+                    Descreva sua manifestação *
+                  </label>
+                  <textarea
+                    name="descricao"
+                    placeholder="Descreva detalhadamente sua manifestação. Quanto mais informações, melhor poderemos atendê-lo(a)."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00703C] focus:border-transparent transition-all outline-none resize-none bg-gray-50 hover:bg-white focus:bg-white"
+                    rows={6}
+                    onChange={handleChange}
+                    value={form.descricao}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1 text-right">
+                    {form.descricao.length} caracteres
+                  </p>
                 </div>
               </div>
 
-              {/* ========================
-                  SEÇÃO ANEXOS
-                  ======================== */}
+              {/* SEÇÃO ANEXOS */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 pb-2 border-b border-gray-200">
                   <Paperclip className="w-5 h-5 text-[#00703C]" />
@@ -397,13 +681,11 @@ export default function NovaManifestacao() {
                           }
                         `}
                       >
-                        {/* Fundo decorativo */}
                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-[#00703C]/5" />
                           <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-[#00703C]/5" />
                         </div>
 
-                        {/* Ícone animado */}
                         <motion.div
                           animate={dragOver ? { y: -4, scale: 1.1 } : { y: 0, scale: 1 }}
                           transition={{ type: 'spring', stiffness: 300 }}
@@ -421,7 +703,6 @@ export default function NovaManifestacao() {
                         </p>
                         <p className="text-sm text-gray-400 mt-1">PDF, DOC, DOCX, JPG, PNG, ZIP — até 5 MB</p>
 
-                        {/* Tipos de arquivo */}
                         <div className="flex gap-2 mt-5 flex-wrap justify-center">
                           {['PDF', 'DOC', 'JPG', 'PNG', 'ZIP'].map((ext) => (
                             <span key={ext} className="text-[10px] font-semibold text-gray-400 bg-white border border-gray-200 px-2 py-0.5 rounded-md tracking-wide">
@@ -440,7 +721,6 @@ export default function NovaManifestacao() {
                       transition={{ duration: 0.25 }}
                       className="rounded-2xl border border-[#00703C]/20 bg-gradient-to-r from-[#00482B]/5 to-white overflow-hidden"
                     >
-                      {/* Barra de progresso decorativa */}
                       <div className="h-1 w-full bg-gray-100">
                         <motion.div
                           initial={{ width: 0 }}
@@ -451,12 +731,10 @@ export default function NovaManifestacao() {
                       </div>
 
                       <div className="flex items-center gap-4 px-5 py-4">
-                        {/* Ícone do arquivo */}
                         <div className="flex-shrink-0 w-12 h-12 bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-center">
                           <FileIcon name={arquivo.name} />
                         </div>
 
-                        {/* Info */}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-800 truncate">{arquivo.name}</p>
                           <div className="flex items-center gap-3 mt-0.5">
@@ -467,7 +745,6 @@ export default function NovaManifestacao() {
                           </div>
                         </div>
 
-                        {/* Ações */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <label htmlFor="file-upload-replace" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-[#00703C] hover:text-[#00703C] transition-colors">
                             <Upload className="w-3.5 h-3.5" /> Trocar
@@ -492,7 +769,7 @@ export default function NovaManifestacao() {
               <div className="pt-6">
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !form.categoriaId || !form.unidadeId || !form.descricao}
                   className="w-full bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
