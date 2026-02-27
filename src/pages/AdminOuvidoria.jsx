@@ -13,18 +13,18 @@ import {
   RefreshCw, Menu, ArrowLeft, Loader2, LogOut, Eye, Shield,
   Users, Clock, FileText, MessageSquare, Filter, ChevronDown,
   UserPlus, Trash2, Mail, Bell, BellOff, CheckCircle2, AlertTriangle,
-  Paperclip, Download,
+  Paperclip, Download, Send,
 } from 'lucide-react'
 
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
 const API_BASE = import.meta.env.VITE_API_URL || 'https://heineken-backend-api-fuc5.onrender.com'
 const MAX_AUDITORES = 4
 
+// ── ENCERRADA REMOVIDO ─────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
   { value: 'ABERTA',     label: 'Aberta',     color: 'bg-blue-500/20 text-blue-500',    icon: AlertCircle },
   { value: 'EM_ANALISE', label: 'Em Análise', color: 'bg-yellow-500/20 text-yellow-500', icon: RefreshCw },
   { value: 'RESPONDIDA', label: 'Respondida', color: 'bg-green-500/20 text-green-500',  icon: CheckCircle },
-  { value: 'ENCERRADA',  label: 'Encerrada',  color: 'bg-gray-500/20 text-gray-500',    icon: XCircle },
 ]
 
 export default function AdminOuvidoria() {
@@ -48,7 +48,7 @@ export default function AdminOuvidoria() {
   const [modalAberto,           setModalAberto]           = useState(false)
   const [manifestacaoSelecionada, setManifestacaoSelecionada] = useState(null)
   const [salvando,              setSalvando]              = useState(false)
-  const [formEdicao,            setFormEdicao]            = useState({ status: '' })
+  const [formEdicao,            setFormEdicao]            = useState({ status: '', resposta: '' })
 
   const [auditores,        setAuditores]        = useState([])
   const [loadingAuditores, setLoadingAuditores] = useState(false)
@@ -96,7 +96,10 @@ export default function AdminOuvidoria() {
 
   function abrirModal(manifestacao) {
     setManifestacaoSelecionada(manifestacao)
-    setFormEdicao({ status: manifestacao.status || 'ABERTA' })
+    setFormEdicao({
+      status: manifestacao.status || 'ABERTA',
+      resposta: manifestacao.resposta || '',
+    })
     setModalAberto(true)
   }
 
@@ -104,16 +107,27 @@ export default function AdminOuvidoria() {
 
   async function salvarAlteracoes() {
     if (!manifestacaoSelecionada) return
+
+    // Validação: se RESPONDIDA, resposta é obrigatória
+    if (formEdicao.status === 'RESPONDIDA' && !formEdicao.resposta.trim()) {
+      alert('Por favor, preencha a resposta antes de marcar como Respondida.')
+      return
+    }
+
     setSalvando(true)
     try {
       const protocolo = manifestacaoSelecionada.protocolo
       if (!protocolo) throw new Error('Protocolo não encontrado')
-      await base44.entities.Manifestacoes.atualizarStatus(protocolo, formEdicao.status)
+
+      // Atualiza status + resposta via API
+      await base44.entities.Manifestacoes.atualizarStatus(protocolo, formEdicao.status, formEdicao.resposta.trim() || undefined)
+
       fecharModal(); carregarManifestacoes()
     } catch (err) { alert('Erro: ' + err.message) }
     finally { setSalvando(false) }
   }
 
+  // Filtra também ENCERRADAS que possam já existir no banco (exibe, mas não permite nova criação)
   const manifestacoesFiltradas = manifestacoes.filter((m) => {
     const matchStatus = filtroStatus === 'TODAS' || m.status === filtroStatus
     const matchBusca = m.protocolo?.toLowerCase().includes(busca.toLowerCase()) || m.nome?.toLowerCase().includes(busca.toLowerCase()) || m.email?.toLowerCase().includes(busca.toLowerCase())
@@ -135,7 +149,6 @@ export default function AdminOuvidoria() {
     abertas: manifestacoes.filter((m) => m.status === 'ABERTA').length,
     emAnalise: manifestacoes.filter((m) => m.status === 'EM_ANALISE').length,
     respondidas: manifestacoes.filter((m) => m.status === 'RESPONDIDA').length,
-    encerradas: manifestacoes.filter((m) => m.status === 'ENCERRADA').length,
   }
 
   async function carregarAuditores() {
@@ -285,14 +298,13 @@ export default function AdminOuvidoria() {
             <p className="text-gray-600">Logado como: <span className="font-semibold text-[#00482B]">{loginUser}</span></p>
           </motion.div>
 
-          {/* STATS */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          {/* STATS — sem Encerradas */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {[
-              { label: 'Total', value: stats.total, sub: 'manifestações', cls: 'bg-white border-gray-100 text-gray-900' },
-              { label: 'Abertas', value: stats.abertas, sub: 'aguardando', cls: 'bg-blue-50 border-blue-100 text-blue-700' },
-              { label: 'Em Análise', value: stats.emAnalise, sub: 'em andamento', cls: 'bg-yellow-50 border-yellow-100 text-yellow-700' },
-              { label: 'Respondidas', value: stats.respondidas, sub: 'finalizadas', cls: 'bg-green-50 border-green-100 text-green-700' },
-              { label: 'Encerradas', value: stats.encerradas, sub: 'arquivadas', cls: 'bg-gray-50 border-gray-200 text-gray-700' },
+              { label: 'Total',       value: stats.total,       sub: 'manifestações',  cls: 'bg-white border-gray-100 text-gray-900' },
+              { label: 'Abertas',     value: stats.abertas,     sub: 'aguardando',     cls: 'bg-blue-50 border-blue-100 text-blue-700' },
+              { label: 'Em Análise',  value: stats.emAnalise,   sub: 'em andamento',   cls: 'bg-yellow-50 border-yellow-100 text-yellow-700' },
+              { label: 'Respondidas', value: stats.respondidas, sub: 'finalizadas',    cls: 'bg-green-50 border-green-100 text-green-700' },
             ].map(({ label, value, sub, cls }) => (
               <div key={label} className={`rounded-2xl shadow-lg p-6 border hover:shadow-xl transition-all ${cls}`}>
                 <p className="text-sm mb-1 opacity-80">{label}</p>
@@ -367,10 +379,14 @@ export default function AdminOuvidoria() {
                                 <div>
                                   <div className="flex items-center gap-2">
                                     <p className="text-sm text-gray-500">Protocolo</p>
-                                    {/* ══ BADGE ANEXO ══ */}
                                     {manifestacao.possuiAnexo && (
                                       <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-[10px] px-1.5 py-0">
                                         <Paperclip className="w-3 h-3 mr-0.5" />Anexo
+                                      </Badge>
+                                    )}
+                                    {manifestacao.resposta && (
+                                      <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0">
+                                        <CheckCircle className="w-3 h-3 mr-0.5" />Respondida
                                       </Badge>
                                     )}
                                   </div>
@@ -408,7 +424,19 @@ export default function AdminOuvidoria() {
                               </div>
                             </div>
 
-                            {/* ══ SEÇÃO ANEXO NO CARD ══ */}
+                            {/* Resposta já enviada (preview no card) */}
+                            {manifestacao.resposta && (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <p className="text-sm text-gray-600 mb-2 font-medium flex items-center gap-2">
+                                  <Send className="w-3.5 h-3.5 text-[#00703C]" />Resposta enviada:
+                                </p>
+                                <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                                  <p className="text-green-800 leading-relaxed text-sm">{manifestacao.resposta}</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* SEÇÃO ANEXO NO CARD */}
                             {manifestacao.possuiAnexo && (
                               <div className="mt-4 pt-4 border-t border-gray-200">
                                 <div className="flex items-center justify-between bg-gradient-to-r from-orange-50 to-white rounded-xl p-4 border border-orange-200/50">
@@ -532,7 +560,9 @@ export default function AdminOuvidoria() {
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* ══════════════════════════════════════════════════════════════════════════
+          MODAL — com caixa de resposta quando status = RESPONDIDA
+      ══════════════════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {modalAberto && manifestacaoSelecionada && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={fecharModal}>
@@ -580,13 +610,58 @@ export default function AdminOuvidoria() {
                   </div>
                 )}
 
+                {/* Seletor de status */}
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2"><RefreshCw className="w-4 h-4 text-[#00482B]" />Status da Manifestação *</label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer text-gray-900" value={formEdicao.status} onChange={(e) => setFormEdicao({ ...formEdicao, status: e.target.value })} disabled={salvando}>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00703C] focus:border-transparent outline-none bg-white appearance-none cursor-pointer text-gray-900"
+                    value={formEdicao.status}
+                    onChange={(e) => setFormEdicao({ ...formEdicao, status: e.target.value })}
+                    disabled={salvando}
+                  >
                     {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
 
+                {/* ══ CAIXA DE RESPOSTA — aparece só quando RESPONDIDA ══ */}
+                <AnimatePresence>
+                  {formEdicao.status === 'RESPONDIDA' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: 'auto' }}
+                      exit={{ opacity: 0, y: -8, height: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-2 bg-gradient-to-br from-green-50 to-white border border-green-200 rounded-xl p-5">
+                        <label className="block text-sm font-semibold text-green-800 flex items-center gap-2">
+                          <Send className="w-4 h-4 text-green-700" />
+                          Resposta ao Solicitante
+                          <span className="text-red-500 font-normal text-xs ml-1">(obrigatório)</span>
+                        </label>
+                        <p className="text-xs text-green-700 mb-3">
+                          Esta resposta ficará visível ao solicitante ao consultar o protocolo.
+                          {!manifestacaoSelecionada.anonima && manifestacaoSelecionada.email && (
+                            <span className="block mt-1">
+                              Será enviada para: <strong>{manifestacaoSelecionada.email}</strong>
+                            </span>
+                          )}
+                        </p>
+                        <textarea
+                          rows={5}
+                          placeholder="Digite aqui a resposta oficial para o solicitante..."
+                          className="w-full px-4 py-3 border border-green-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-gray-900 placeholder:text-gray-400 resize-none bg-white transition-all"
+                          value={formEdicao.resposta}
+                          onChange={(e) => setFormEdicao({ ...formEdicao, resposta: e.target.value })}
+                          disabled={salvando}
+                        />
+                        <p className="text-xs text-green-600 text-right">{formEdicao.resposta.length} caracteres</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Descrição original */}
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-[#00482B]" />Descrição Original</label>
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
@@ -598,8 +673,21 @@ export default function AdminOuvidoria() {
 
                 <div className="flex gap-3 pt-2">
                   <Button onClick={fecharModal} variant="outline" className="flex-1 rounded-xl h-12 border-2 hover:bg-gray-50 transition-all" disabled={salvando}><X className="w-4 h-4 mr-2" />Cancelar</Button>
-                  <Button onClick={salvarAlteracoes} className="flex-1 bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white rounded-xl h-12 shadow-lg hover:shadow-xl transition-all disabled:opacity-50" disabled={salvando}>
-                    {salvando ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Salvando...</span> : <span className="flex items-center gap-2"><Save className="w-4 h-4" />Salvar Alterações</span>}
+                  <Button
+                    onClick={salvarAlteracoes}
+                    className={`flex-1 text-white rounded-xl h-12 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 ${
+                      formEdicao.status === 'RESPONDIDA'
+                        ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600'
+                        : 'bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A]'
+                    }`}
+                    disabled={salvando || (formEdicao.status === 'RESPONDIDA' && !formEdicao.resposta.trim())}
+                  >
+                    {salvando
+                      ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Salvando...</span>
+                      : formEdicao.status === 'RESPONDIDA'
+                        ? <span className="flex items-center gap-2"><Send className="w-4 h-4" />Enviar Resposta</span>
+                        : <span className="flex items-center gap-2"><Save className="w-4 h-4" />Salvar Alterações</span>
+                    }
                   </Button>
                 </div>
               </div>
