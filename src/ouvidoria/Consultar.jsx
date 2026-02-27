@@ -29,7 +29,8 @@ import {
   ChevronRight,
   Home,
   Paperclip,
-  Download
+  Download,
+  Send,
 } from 'lucide-react'
 
 const LOGO_URL = 'https://d335luupugsy2.cloudfront.net/cms/files/1124874/1768396355/$zqh0zhgnv8j'
@@ -54,6 +55,7 @@ const STATUS_CONFIG = {
     icon: CheckCircle,
     bg: 'bg-green-50'
   },
+  // Mantido para compatibilidade com registros antigos
   ENCERRADA: { 
     label: 'Encerrada', 
     color: 'bg-gray-500/10 text-gray-700 border-gray-200', 
@@ -216,7 +218,7 @@ export default function ConsultarProtocolo() {
                         </div>
                       </div>
 
-                      {/* Grid */}
+                      {/* Grid de informações */}
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                           {[
@@ -282,7 +284,7 @@ export default function ConsultarProtocolo() {
                         </div>
                       </div>
 
-                      {/* Mensagem */}
+                      {/* Mensagem original */}
                       <div className="mt-6">
                         <div className="flex items-center gap-3 text-gray-700 mb-4">
                           <div className="p-2 bg-[#00482B]/10 rounded-lg"><MessageSquare className="w-5 h-5 text-[#00482B]" /></div>
@@ -293,7 +295,36 @@ export default function ConsultarProtocolo() {
                         </div>
                       </div>
 
-                      {/* ══ ANEXO ══ */}
+                      {/* ══ RESPOSTA DA OUVIDORIA ══ */}
+                      {manifestacao.resposta && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="mt-6"
+                        >
+                          <div className="flex items-center gap-3 text-gray-700 mb-4">
+                            <div className="p-2 bg-green-100 rounded-lg"><Send className="w-5 h-5 text-green-700" /></div>
+                            <span className="font-semibold text-gray-900">Resposta da Ouvidoria</span>
+                            <Badge className="bg-green-100 text-green-700 border-green-300 text-xs ml-auto">Respondida</Badge>
+                          </div>
+                          <div className="bg-gradient-to-br from-green-50 to-white rounded-xl p-6 border border-green-200 shadow-sm relative overflow-hidden">
+                            {/* Detalhe decorativo */}
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-green-300 rounded-l-xl" />
+                            <div className="pl-4">
+                              <p className="text-gray-800 whitespace-pre-line leading-relaxed">{manifestacao.resposta}</p>
+                              {manifestacao.dataResposta && (
+                                <p className="text-xs text-green-600 mt-4 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  Respondido em {formatarData(manifestacao.dataResposta)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* Anexo */}
                       {manifestacao.possuiAnexo && (
                         <div className="mt-6">
                           <div className="flex items-center gap-3 text-gray-700 mb-4">
