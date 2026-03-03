@@ -22,161 +22,6 @@ api.interceptors.response.use(
 );
 
 // ============================================
-// 🔹 MANIFESTAÇÕES (funções legacy)
-// ============================================
-export function criarManifestacao(data) {
-  return api.post("/manifestacoes", data);
-}
-
-export function criarManifestacaoComArquivo(formData) {
-  return api.post("/manifestacoes/com-arquivo", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-}
-
-export function consultarPorProtocolo(protocolo) {
-  return api.get(`/manifestacoes/protocolo/${protocolo}`);
-}
-
-// 🔥 CORRIGIDO: Adicionado parâmetro resposta
-export function atualizarStatusPorProtocolo(protocolo, status, resposta) {
-  let url = `/manifestacoes/${protocolo}/status?status=${status}`;
-  if (resposta) {
-    url += `&resposta=${encodeURIComponent(resposta)}`;
-  }
-  return api.patch(url);
-}
-
-export function getConfiguracaoOuvidoria() {
-  return api.get("/configuracao-ouvidoria").then(res => res.data);
-}
-
-export function updateConfiguracaoOuvidoria(data) {
-  return api.put("/configuracao-ouvidoria", data).then(res => res.data);
-}
-
-// ============================================
-// 📌 MANIFESTAÇÕES API (objeto completo)
-// ============================================
-export const manifestacoesAPI = {
-  list: () => api.get("/manifestacoes").then(res => res.data),
-  consultarPorProtocolo: (protocolo) => api.get(`/manifestacoes/protocolo/${protocolo}`).then(res => res.data),
-  create: (data) => api.post("/manifestacoes", data).then(res => res.data),
-  createComArquivo: (formData) => api.post("/manifestacoes/com-arquivo", formData, {
-    headers: { "Content-Type": "multipart/form-data" }
-  }).then(res => res.data),
-  
-  // 🔥 CORRIGIDO: Adicionado parâmetro resposta
-  atualizarStatus: (protocolo, status, resposta) => {
-    let url = `/manifestacoes/${protocolo}/status?status=${status}`;
-    if (resposta) {
-      url += `&resposta=${encodeURIComponent(resposta)}`;
-    }
-    return api.patch(url).then(res => res.data);
-  },
-  
-  update: (id, data) => {
-    console.warn('⚠️ update() está obsoleto! Use atualizarStatus(protocolo, status, resposta)');
-    return api.put(`/manifestacoes/${id}`, data).then(res => res.data);
-  },
-  delete: (id) => api.delete(`/manifestacoes/${id}`),
-};
-
-// ============================================
-// 📌 UNIDADES
-// ============================================
-export const unidadesAPI = {
-  get: (id) => api.get(`/unidades/${id}`).then(res => res.data),
-  list: () => api.get("/unidades").then(res => res.data),
-  create: (data) => api.post("/unidades", data).then(res => res.data),
-  update: (id, data) => api.put(`/unidades/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/unidades/${id}`),
-};
-
-// ============================================
-// 📌 CATEGORIAS
-// ============================================
-export const categoriasAPI = {
-  get: (id) => api.get(`/categorias/${id}`).then(res => res.data),
-  list: () => api.get("/categorias").then(res => res.data),
-  create: (data) => api.post("/categorias", data).then(res => res.data),
-  update: (id, data) => api.put(`/categorias/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/categorias/${id}`),
-};
-
-// ============================================
-// 📌 USERS
-// ============================================
-export const usersAPI = {
-  list: () => api.get("/users").then(res => res.data),
-  create: (data) => api.post("/users", data).then(res => res.data),
-  update: (id, data) => api.put(`/users/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/users/${id}`),
-  login: (credentials) => api.post("/users/login", credentials).then(res => res.data),
-  logout: () => api.post("/users/logout"),
-  testAuth: () => api.get("/users/test/administrator").then(res => res.data),
-};
-
-// ============================================
-// 📌 RESPOSTAS
-// ============================================
-export const respostasAPI = {
-  list: () => api.get("/respostas").then(res => res.data),
-  create: (data) => api.post("/respostas", data).then(res => res.data),
-  update: (id, data) => api.put(`/respostas/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/respostas/${id}`),
-};
-
-// ============================================
-// 📌 CARDS DO MURAL
-// ============================================
-export const cardMuralAPI = {
-  list: () => api.get("/api/cards").then(res => res.data),
-  getById: (id) => api.get(`/api/cards/${id}`).then(res => res.data),
-  listByType: (tipo) => api.get(`/api/cards/tipo/${tipo}`).then(res => res.data),
-  create: (data) => api.post("/api/cards", data).then(res => res.data),
-  update: (id, data) => api.put(`/api/cards/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/api/cards/${id}`),
-};
-
-// ============================================
-// 📌 NOTÍCIAS
-// ============================================
-export const noticiasAPI = {
-  list: () => api.get("/api/noticias").then(res => res.data),
-  getById: (id) => api.get(`/api/noticias/${id}`).then(res => res.data),
-  create: (data) => api.post("/api/noticias", data).then(res => res.data),
-  update: (id, data) => api.put(`/api/noticias/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/api/noticias/${id}`),
-};
-
-// ============================================
-// 📌 CONFIGURAÇÃO DA OUVIDORIA
-// ============================================
-export const configuracaoAPI = {
-  get: () => api.get("/configuracao-ouvidoria").then(res => res.data),
-  update: (data) => api.put("/configuracao-ouvidoria", data).then(res => res.data),
-};
-
-// ============================================
-// 📌 ESTATÍSTICAS
-// ============================================
-export const estatisticasAPI = {
-  get: () => api.get("/api/estatisticas").then(res => res.data),
-};
-
-// ============================================
-// 📌 AUDITORES
-// ============================================
-export const auditoresAPI = {
-  list:   ()     => api.get("/api/ouvidoria/auditores").then(res => res.data),
-  add:    (data) => api.post("/api/ouvidoria/auditores", data).then(res => res.data),
-  remove: (id)   => api.delete(`/api/ouvidoria/auditores/${id}`).then(res => res.data),
-};
-
-// ============================================
 // 📌 FUNÇÃO REQUEST PARA FETCH NATIVO
 // ============================================
 async function request(endpoint, method = "GET", body = null) {
@@ -238,7 +83,6 @@ export const base44 = {
       delete: (id) => request(`/respostas/${id}`, "DELETE"),
     },
 
-    // 🔥 MANIFESTAÇÕES CORRIGIDO - COM RESPOSTA
     Manifestacoes: {
       list: () => request(`/manifestacoes`),
       consultarPorProtocolo: (protocolo) => request(`/manifestacoes/protocolo/${protocolo}`),
@@ -256,7 +100,6 @@ export const base44 = {
         return res.json();
       },
       
-      // 🔥 CORREÇÃO CRÍTICA AQUI
       atualizarStatus: (protocolo, status, resposta) => {
         let url = `/manifestacoes/${protocolo}/status?status=${status}`;
         if (resposta) {
@@ -270,6 +113,46 @@ export const base44 = {
         return request(`/manifestacoes/${id}`, "PUT", data);
       },
       delete: (id) => request(`/manifestacoes/${id}`, "DELETE"),
+    },
+
+    // ============================================
+    // 📌 NOVOS ENDPOINTS DE UPLOAD (BASE44)
+    // ============================================
+    Upload: {
+      // Upload de imagem para notícias/cards
+      imagem: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(`${API_BASE_URL}/upload/imagem`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Erro no upload: ${res.status} - ${text}`);
+        }
+        return res.json(); // Retorna { url: "/uploads/imagens/uuid.jpg" }
+      },
+      
+      // Upload de anexo para manifestações
+      anexo: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(`${API_BASE_URL}/upload/anexo`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Erro no upload: ${res.status} - ${text}`);
+        }
+        return res.json(); // Retorna { url: "/uploads/anexos/uuid.pdf", nome: "original.pdf" }
+      },
+      
+      // Deletar imagem
+      deletar: (caminho) => request(`/upload/imagem?caminho=${encodeURIComponent(caminho)}`, "DELETE"),
     },
 
     CardMural: {
