@@ -28,7 +28,6 @@ export function criarManifestacao(data) {
   return api.post("/manifestacoes", data);
 }
 
-// ✅ CORRIGIDO: aponta para /com-arquivo
 export function criarManifestacaoComArquivo(formData) {
   return api.post("/manifestacoes/com-arquivo", formData, {
     headers: {
@@ -41,8 +40,13 @@ export function consultarPorProtocolo(protocolo) {
   return api.get(`/manifestacoes/protocolo/${protocolo}`);
 }
 
-export function atualizarStatusPorProtocolo(protocolo, status) {
-  return api.patch(`/manifestacoes/${protocolo}/status?status=${status}`);
+// 🔥 CORRIGIDO: Adicionado parâmetro resposta
+export function atualizarStatusPorProtocolo(protocolo, status, resposta) {
+  let url = `/manifestacoes/${protocolo}/status?status=${status}`;
+  if (resposta) {
+    url += `&resposta=${encodeURIComponent(resposta)}`;
+  }
+  return api.patch(url);
 }
 
 export function getConfiguracaoOuvidoria() {
@@ -60,14 +64,21 @@ export const manifestacoesAPI = {
   list: () => api.get("/manifestacoes").then(res => res.data),
   consultarPorProtocolo: (protocolo) => api.get(`/manifestacoes/protocolo/${protocolo}`).then(res => res.data),
   create: (data) => api.post("/manifestacoes", data).then(res => res.data),
-  // ✅ CORRIGIDO: aponta para /com-arquivo
   createComArquivo: (formData) => api.post("/manifestacoes/com-arquivo", formData, {
     headers: { "Content-Type": "multipart/form-data" }
   }).then(res => res.data),
-  atualizarStatus: (protocolo, status) =>
-    api.patch(`/manifestacoes/${protocolo}/status?status=${status}`).then(res => res.data),
+  
+  // 🔥 CORRIGIDO: Adicionado parâmetro resposta
+  atualizarStatus: (protocolo, status, resposta) => {
+    let url = `/manifestacoes/${protocolo}/status?status=${status}`;
+    if (resposta) {
+      url += `&resposta=${encodeURIComponent(resposta)}`;
+    }
+    return api.patch(url).then(res => res.data);
+  },
+  
   update: (id, data) => {
-    console.warn('⚠️ update() está obsoleto! Use atualizarStatus(protocolo, status)');
+    console.warn('⚠️ update() está obsoleto! Use atualizarStatus(protocolo, status, resposta)');
     return api.put(`/manifestacoes/${id}`, data).then(res => res.data);
   },
   delete: (id) => api.delete(`/manifestacoes/${id}`),
@@ -227,16 +238,16 @@ export const base44 = {
       delete: (id) => request(`/respostas/${id}`, "DELETE"),
     },
 
+    // 🔥 MANIFESTAÇÕES CORRIGIDO - COM RESPOSTA
     Manifestacoes: {
       list: () => request(`/manifestacoes`),
       consultarPorProtocolo: (protocolo) => request(`/manifestacoes/protocolo/${protocolo}`),
       create: (data) => request(`/manifestacoes`, "POST", data),
-      // ✅ CORRIGIDO: aponta para /com-arquivo
       createComArquivo: async (formData) => {
         const res = await fetch(`${API_BASE_URL}/manifestacoes/com-arquivo`, {
           method: "POST",
           credentials: "include",
-          body: formData, // sem Content-Type: o browser define o boundary automaticamente
+          body: formData,
         });
         if (!res.ok) {
           const text = await res.text();
@@ -244,10 +255,18 @@ export const base44 = {
         }
         return res.json();
       },
-      atualizarStatus: (protocolo, status) =>
-        request(`/manifestacoes/${protocolo}/status?status=${status}`, "PATCH"),
+      
+      // 🔥 CORREÇÃO CRÍTICA AQUI
+      atualizarStatus: (protocolo, status, resposta) => {
+        let url = `/manifestacoes/${protocolo}/status?status=${status}`;
+        if (resposta) {
+          url += `&resposta=${encodeURIComponent(resposta)}`;
+        }
+        return request(url, "PATCH");
+      },
+      
       update: (id, data) => {
-        console.warn('⚠️ update() está obsoleto! Use atualizarStatus(protocolo, status)');
+        console.warn('⚠️ update() está obsoleto! Use atualizarStatus(protocolo, status, resposta)');
         return request(`/manifestacoes/${id}`, "PUT", data);
       },
       delete: (id) => request(`/manifestacoes/${id}`, "DELETE"),
