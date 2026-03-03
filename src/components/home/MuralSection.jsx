@@ -15,7 +15,8 @@ import {
     Briefcase,
     Tag,
     Eye,
-    BookOpen
+    BookOpen,
+    X
 } from 'lucide-react';
 import { useTheme } from '../../Layout';
 import { useQuery } from '@tanstack/react-query';
@@ -42,7 +43,8 @@ const campanhaColors = {
         text: 'text-yellow-500',
         bg: 'bg-yellow-500/10',
         hover: 'hover:border-yellow-500/50',
-        shadow: 'shadow-yellow-500/10'
+        shadow: 'shadow-yellow-500/10',
+        pill: 'bg-yellow-500/10 text-yellow-500'
     },
     rosa: { 
         gradient: 'from-pink-500/10 via-pink-500/5 to-transparent',
@@ -50,7 +52,8 @@ const campanhaColors = {
         text: 'text-pink-500',
         bg: 'bg-pink-500/10',
         hover: 'hover:border-pink-500/50',
-        shadow: 'shadow-pink-500/10'
+        shadow: 'shadow-pink-500/10',
+        pill: 'bg-pink-500/10 text-pink-500'
     },
     azul: { 
         gradient: 'from-blue-500/10 via-blue-500/5 to-transparent',
@@ -58,7 +61,8 @@ const campanhaColors = {
         text: 'text-blue-500',
         bg: 'bg-blue-500/10',
         hover: 'hover:border-blue-500/50',
-        shadow: 'shadow-blue-500/10'
+        shadow: 'shadow-blue-500/10',
+        pill: 'bg-blue-500/10 text-blue-500'
     },
     default: { 
         gradient: 'from-green-500/10 via-green-500/5 to-transparent',
@@ -66,7 +70,8 @@ const campanhaColors = {
         text: 'text-green-500',
         bg: 'bg-green-500/10',
         hover: 'hover:border-green-500/50',
-        shadow: 'shadow-green-500/10'
+        shadow: 'shadow-green-500/10',
+        pill: 'bg-green-500/10 text-green-500'
     }
 };
 
@@ -76,19 +81,16 @@ export default function MuralSection() {
     const [hoveredCard, setHoveredCard] = useState(null);
     const [selectedNoticia, setSelectedNoticia] = useState(null);
 
-    // Buscar notícias da API
     const { data: noticiasData = [], isLoading: loadingNoticias } = useQuery({
         queryKey: ['noticias'],
         queryFn: noticiasAPI.list,
     });
 
-    // Buscar cards do mural da API
     const { data: cardsData = [], isLoading: loadingCards } = useQuery({
         queryKey: ['cardsMural'],
         queryFn: cardMuralAPI.list,
     });
 
-    // Filtrar apenas ativos e ordenar
     const noticias = noticiasData
         .filter(n => n.ativo)
         .sort((a, b) => new Date(b.data_publicacao) - new Date(a.data_publicacao));
@@ -111,12 +113,17 @@ export default function MuralSection() {
 
     const formatarData = (dataString) => {
         if (!dataString) return '';
-        const data = new Date(dataString);
-        return data.toLocaleDateString('pt-BR', { 
-            day: '2-digit', 
-            month: 'long', 
-            year: 'numeric' 
+        return new Date(dataString).toLocaleDateString('pt-BR', { 
+            day: '2-digit', month: 'long', year: 'numeric' 
         });
+    };
+
+    // Formata a data de aniversário — exibe apenas dia e mês (sem o ano)
+    const formatarAniversario = (dataString) => {
+        if (!dataString) return '';
+        // Força o parse em horário local para não ter problema de timezone
+        const data = new Date(dataString + 'T00:00:00');
+        return data.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
     };
 
     if (loadingNoticias || loadingCards) {
@@ -174,15 +181,11 @@ export default function MuralSection() {
                         Fique por dentro
                     </span>
                     
-                    <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
+                    <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         Mural de Novidades
                     </h2>
                     
-                    <p className={`text-lg max-w-2xl mx-auto ${
-                        isDark ? 'text-white/60' : 'text-gray-600'
-                    }`}>
+                    <p className={`text-lg max-w-2xl mx-auto ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
                         Acompanhe as últimas notícias, campanhas e destaques da Premium Bebidas
                     </p>
                 </motion.div>
@@ -206,7 +209,7 @@ export default function MuralSection() {
                     </motion.div>
                 ) : (
                     <>
-                        {/* Carrossel de Notícias */}
+                        {/* ── Carrossel de Notícias ── */}
                         {noticias.length > 0 && (
                             <motion.div 
                                 initial={{ opacity: 0, y: 30 }} 
@@ -238,12 +241,9 @@ export default function MuralSection() {
                                                         className="w-full h-full object-cover"
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                                                    
-                                                    {/* Badge */}
                                                     <div className="absolute top-4 left-4 flex items-center gap-2">
                                                         <div className="px-3 py-1.5 rounded-full bg-green-500 text-black text-xs font-semibold flex items-center gap-1">
-                                                            <Newspaper className="w-3 h-3" />
-                                                            Notícia
+                                                            <Newspaper className="w-3 h-3" />Notícia
                                                         </div>
                                                         {noticias[currentNewsIndex]?.data_publicacao && (
                                                             <div className="px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs flex items-center gap-1">
@@ -255,21 +255,13 @@ export default function MuralSection() {
                                                 </div>
 
                                                 {/* Conteúdo */}
-                                                <div className={`p-8 md:p-12 flex flex-col justify-center ${
-                                                    isDark ? 'bg-[#111111]' : 'bg-white'
-                                                }`}>
-                                                    <h3 className={`text-2xl md:text-3xl font-bold mb-4 ${
-                                                        isDark ? 'text-white' : 'text-gray-900'
-                                                    }`}>
+                                                <div className={`p-8 md:p-12 flex flex-col justify-center ${isDark ? 'bg-[#111111]' : 'bg-white'}`}>
+                                                    <h3 className={`text-2xl md:text-3xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                                         {noticias[currentNewsIndex]?.titulo}
                                                     </h3>
-                                                    
-                                                    <p className={`text-lg leading-relaxed mb-6 ${
-                                                        isDark ? 'text-white/70' : 'text-gray-600'
-                                                    }`}>
+                                                    <p className={`text-lg leading-relaxed mb-6 ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
                                                         {noticias[currentNewsIndex]?.resumo}
                                                     </p>
-
                                                     <motion.button
                                                         whileHover={{ x: 5 }}
                                                         onClick={() => setSelectedNoticia(noticias[currentNewsIndex])}
@@ -283,32 +275,18 @@ export default function MuralSection() {
                                         </motion.div>
                                     </AnimatePresence>
 
-                                    {/* Controles do carrossel */}
                                     {noticias.length > 1 && (
                                         <>
-                                            <button 
-                                                onClick={prevNews} 
-                                                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-all hover:scale-110 z-20"
-                                            >
+                                            <button onClick={prevNews} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-all hover:scale-110 z-20">
                                                 <ChevronLeft className="w-5 h-5" />
                                             </button>
-                                            <button 
-                                                onClick={nextNews} 
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-all hover:scale-110 z-20"
-                                            >
+                                            <button onClick={nextNews} className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-all hover:scale-110 z-20">
                                                 <ChevronRight className="w-5 h-5" />
                                             </button>
-                                            
                                             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
                                                 {noticias.map((_, i) => (
-                                                    <button 
-                                                        key={i} 
-                                                        onClick={() => setCurrentNewsIndex(i)} 
-                                                        className={`transition-all ${
-                                                            i === currentNewsIndex 
-                                                                ? 'w-8 h-2 bg-green-500 rounded-full' 
-                                                                : 'w-2 h-2 bg-white/50 hover:bg-white/80 rounded-full'
-                                                        }`} 
+                                                    <button key={i} onClick={() => setCurrentNewsIndex(i)} 
+                                                        className={`transition-all ${i === currentNewsIndex ? 'w-8 h-2 bg-green-500 rounded-full' : 'w-2 h-2 bg-white/50 hover:bg-white/80 rounded-full'}`} 
                                                     />
                                                 ))}
                                             </div>
@@ -316,8 +294,7 @@ export default function MuralSection() {
                                     )}
                                 </div>
 
-                                {/* Indicador de slide */}
-                                <div className="flex justify-center mt-4 gap-1">
+                                <div className="flex justify-center mt-4">
                                     <span className={`text-sm ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
                                         {currentNewsIndex + 1} de {noticias.length} notícias
                                     </span>
@@ -325,7 +302,7 @@ export default function MuralSection() {
                             </motion.div>
                         )}
 
-                        {/* Cards do Mural */}
+                        {/* ── Cards do Mural ── */}
                         {cardsMural.length > 0 && (
                             <div>
                                 <motion.div 
@@ -334,9 +311,7 @@ export default function MuralSection() {
                                     viewport={{ once: true }}
                                     className="text-center mb-10"
                                 >
-                                    <h3 className={`text-2xl font-bold mb-2 ${
-                                        isDark ? 'text-white' : 'text-gray-900'
-                                    }`}>
+                                    <h3 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                         Destaques da Semana
                                     </h3>
                                     <p className={`text-sm ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
@@ -348,7 +323,13 @@ export default function MuralSection() {
                                     {cardsMural.map((card, index) => {
                                         const IconConfig = tipoIcons[card.tipo] || tipoIcons.noticia;
                                         const Icon = IconConfig.icon;
-                                        const colors = card.cor_destaque ? campanhaColors[card.cor_destaque] || campanhaColors.default : campanhaColors.default;
+                                        const isAniversariante = card.tipo === 'aniversariantes';
+                                        // Aniversariantes sempre usam o tema rosa independentemente de cor_destaque
+                                        const colors = isAniversariante
+                                            ? campanhaColors.rosa
+                                            : card.cor_destaque
+                                                ? campanhaColors[card.cor_destaque] || campanhaColors.default
+                                                : campanhaColors.default;
                                         
                                         return (
                                             <motion.div 
@@ -363,21 +344,19 @@ export default function MuralSection() {
                                                 className={`group relative rounded-3xl overflow-hidden border transition-all duration-300 ${
                                                     isDark 
                                                         ? `bg-gradient-to-br ${colors.gradient} ${colors.border} ${colors.hover}` 
-                                                        : `bg-white border-gray-200 hover:border-${colors.text}`
+                                                        : `bg-white border-gray-200`
                                                 } ${colors.shadow} hover:shadow-2xl`}
                                             >
-                                                {/* Overlay decorativo */}
                                                 <div className={`absolute inset-0 bg-gradient-to-t ${
                                                     isDark ? 'from-black/50 via-transparent to-transparent' : 'from-gray-900/5 via-transparent to-transparent'
                                                 } opacity-0 group-hover:opacity-100 transition-opacity`} />
 
                                                 <div className="relative p-8">
-                                                    {/* Header do card */}
+                                                    {/* Header */}
                                                     <div className="flex items-start justify-between mb-6">
                                                         <div className={`w-12 h-12 rounded-2xl ${IconConfig.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                                                             <Icon className={`w-6 h-6 ${IconConfig.color}`} />
                                                         </div>
-                                                        
                                                         {card.mes_referencia && (
                                                             <div className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1 ${
                                                                 isDark ? 'bg-white/5 text-white/60' : 'bg-gray-100 text-gray-600'
@@ -388,10 +367,12 @@ export default function MuralSection() {
                                                         )}
                                                     </div>
 
-                                                    {/* Imagem (se houver) */}
+                                                    {/* Foto */}
                                                     {card.imagem_url && (
                                                         <div className="relative w-24 h-24 mx-auto mb-6">
-                                                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-500 to-green-600 opacity-20 group-hover:opacity-30 transition-opacity blur-xl" />
+                                                            <div className={`absolute inset-0 rounded-full opacity-20 group-hover:opacity-30 transition-opacity blur-xl ${
+                                                                isAniversariante ? 'bg-gradient-to-r from-pink-500 to-pink-600' : 'bg-gradient-to-r from-green-500 to-green-600'
+                                                            }`} />
                                                             <img 
                                                                 src={card.imagem_url} 
                                                                 alt={card.titulo} 
@@ -408,9 +389,7 @@ export default function MuralSection() {
                                                             {tipoLabels[card.tipo]}
                                                         </span>
                                                         
-                                                        <h4 className={`text-xl font-bold mb-3 ${
-                                                            isDark ? 'text-white' : 'text-gray-900'
-                                                        }`}>
+                                                        <h4 className={`text-xl font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                                             {card.titulo}
                                                         </h4>
                                                         
@@ -421,6 +400,23 @@ export default function MuralSection() {
                                                                     {card.nome_funcionario}
                                                                 </p>
                                                             </div>
+                                                        )}
+
+                                                        {/* ── DATA DE ANIVERSÁRIO ── */}
+                                                        {isAniversariante && card.data_aniversario && (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                                whileInView={{ opacity: 1, scale: 1 }}
+                                                                viewport={{ once: true }}
+                                                                className="flex items-center justify-center gap-2 mb-3"
+                                                            >
+                                                                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${
+                                                                    isDark ? 'bg-pink-500/20 text-pink-400' : 'bg-pink-50 text-pink-600 border border-pink-200'
+                                                                }`}>
+                                                                    <Cake className="w-3.5 h-3.5" />
+                                                                    {formatarAniversario(card.data_aniversario)}
+                                                                </div>
+                                                            </motion.div>
                                                         )}
                                                         
                                                         {card.setor && (
@@ -433,19 +429,18 @@ export default function MuralSection() {
                                                         )}
                                                         
                                                         {card.descricao && (
-                                                            <p className={`text-sm leading-relaxed line-clamp-3 ${
-                                                                isDark ? 'text-white/60' : 'text-gray-600'
-                                                            }`}>
+                                                            <p className={`text-sm leading-relaxed line-clamp-3 ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
                                                                 {card.descricao}
                                                             </p>
                                                         )}
                                                     </div>
 
-                                                    {/* Hover indicator */}
+                                                    {/* Barra de hover */}
                                                     <motion.div 
                                                         initial={{ scaleX: 0 }}
                                                         animate={{ scaleX: hoveredCard === card.id ? 1 : 0 }}
                                                         className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                                                            isAniversariante ? 'from-pink-400 to-pink-600' :
                                                             card.cor_destaque === 'amarelo' ? 'from-yellow-500 to-yellow-600' :
                                                             card.cor_destaque === 'rosa' ? 'from-pink-500 to-pink-600' :
                                                             card.cor_destaque === 'azul' ? 'from-blue-500 to-blue-600' :
@@ -463,7 +458,7 @@ export default function MuralSection() {
                 )}
             </div>
 
-            {/* Modal de notícia completa */}
+            {/* ── Modal de notícia completa ── */}
             <AnimatePresence>
                 {selectedNoticia && (
                     <motion.div
@@ -492,7 +487,7 @@ export default function MuralSection() {
                                         onClick={() => setSelectedNoticia(null)}
                                         className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
                                     >
-                                        <ChevronRight className="w-5 h-5 rotate-45" />
+                                        <X className="w-5 h-5" />
                                     </button>
                                 </div>
                             )}
