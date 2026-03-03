@@ -77,7 +77,9 @@ function ImageUploadInput({ value, onChange, label = "Imagem" }) {
             }
 
             const data = await response.json();
-            const urlFinal = data.url.startsWith('http') ? data.url : `${API_BASE}${data.url}`;
+            const urlFinal = (data.url.startsWith('data:') || data.url.startsWith('http')) 
+    ? data.url 
+    : `${API_BASE}${data.url}`;
             setPreview(urlFinal);
             onChange(urlFinal);
         } catch (err) {
