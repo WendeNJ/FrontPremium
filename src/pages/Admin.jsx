@@ -262,6 +262,7 @@ export default function Admin() {
     const [showFilters, setShowFilters] = useState(false);
     const [filtroStatus, setFiltroStatus] = useState('TODOS');
     const [busca, setBusca] = useState('');
+    const [apiError, setApiError] = useState(''); // Para capturar erros de API
 
     const [newNoticia, setNewNoticia] = useState({
         titulo: '',
@@ -292,7 +293,8 @@ export default function Admin() {
             try {
                 await usersAPI.testAuth();
                 setIsAuthenticated(true);
-            } catch {
+            } catch (error) {
+                console.error('Erro de autenticação:', error);
                 setIsAuthenticated(false);
             }
         };
@@ -310,17 +312,28 @@ export default function Admin() {
     // ============================================
     // 📌 QUERIES
     // ============================================
-    const { data: noticias = [], isLoading: loadingNoticias } = useQuery({
+    const { data: noticias = [], isLoading: loadingNoticias, error: noticiasError } = useQuery({
         queryKey: ['noticias-admin'],
         queryFn: noticiasAPI.list,
         enabled: isAuthenticated,
+        retry: 1,
     });
 
-    const { data: cardsMural = [], isLoading: loadingCards } = useQuery({
+    const { data: cardsMural = [], isLoading: loadingCards, error: cardsError } = useQuery({
         queryKey: ['cardsMural-admin'],
         queryFn: cardMuralAPI.list,
         enabled: isAuthenticated,
+        retry: 1,
     });
+
+    // Mostrar erro de API se houver
+    useEffect(() => {
+        if (noticiasError || cardsError) {
+            const errorMsg = noticiasError?.message || cardsError?.message || 'Erro ao carregar dados';
+            setApiError(errorMsg);
+            console.error('Erro na query:', { noticiasError, cardsError });
+        }
+    }, [noticiasError, cardsError]);
 
     // ============================================
     // 📌 MUTATIONS - NOTÍCIAS
@@ -334,7 +347,12 @@ export default function Admin() {
                 titulo: '', resumo: '', conteudo: '', imagem_url: '',
                 data_publicacao: new Date().toISOString().split('T')[0], ativo: true
             });
+            setApiError('');
         },
+        onError: (error) => {
+            console.error('Erro ao criar notícia:', error);
+            setApiError(error.response?.data?.message || 'Erro ao criar notícia');
+        }
     });
 
     const updateNoticiaMutation = useMutation({
@@ -343,7 +361,12 @@ export default function Admin() {
             queryClient.invalidateQueries({ queryKey: ['noticias-admin'] });
             queryClient.invalidateQueries({ queryKey: ['noticias'] });
             setEditingNoticia(null);
+            setApiError('');
         },
+        onError: (error) => {
+            console.error('Erro ao atualizar notícia:', error);
+            setApiError(error.response?.data?.message || 'Erro ao atualizar notícia');
+        }
     });
 
     const deleteNoticiaMutation = useMutation({
@@ -351,14 +374,30 @@ export default function Admin() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['noticias-admin'] });
             queryClient.invalidateQueries({ queryKey: ['noticias'] });
+            setApiError('');
         },
+        onError: (error) => {
+            console.error('Erro ao deletar notícia:', error);
+            setApiError(error.response?.data?.message || 'Erro ao deletar notícia');
+        }
     });
 
     // ============================================
     // 📌 MUTATIONS - CARDS MURAL
     // ============================================
     const createCardMutation = useMutation({
-        mutationFn: cardMuralAPI.create,
+        mutationFn: (cardData) => {
+            // Garantir que campos vazios sejam null
+            const dataToSend = {
+                ...cardData,
+                setor: cardData.setor || null,
+                cor_destaque: cardData.cor_destaque || null,
+                nome_funcionario: cardData.nome_funcionario || null,
+                data_aniversario: cardData.data_aniversario || null,
+                imagem_url: cardData.imagem_url || null
+            };
+            return cardMuralAPI.create(dataToSend);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['cardsMural-admin'] });
             queryClient.invalidateQueries({ queryKey: ['cardsMural'] });
@@ -368,16 +407,52 @@ export default function Admin() {
                 mes_referencia: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
                 cor_destaque: '', ativo: true, ordem: 0, data_aniversario: ''
             });
+            setApiError('');
         },
+        onError: (error) => {
+            console.error('Erro ao criar card:', error);
+            // Log detalhado para debug do 403
+            if (error.response?.status === 403) {
+                console.error('Erro 403 - Detalhes:', {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    data: error.config?.data,
+                    response: error.response?.data
+                });
+                setApiError('Erro de permissão (403). Verifique se você está logado e tem permissões adequadas.');
+            } else {
+                setApiError(error.response?.data?.message || 'Erro ao criar card');
+            }
+        }
     });
 
     const updateCardMutation = useMutation({
-        mutationFn: ({ id, data }) => cardMuralAPI.update(id, data),
+        mutationFn: ({ id, data }) => {
+            // Garantir que campos vazios sejam null
+            const dataToSend = {
+                ...data,
+                setor: data.setor || null,
+                cor_destaque: data.cor_destaque || null,
+                nome_funcionario: data.nome_funcionario || null,
+                data_aniversario: data.data_aniversario || null,
+                imagem_url: data.imagem_url || null
+            };
+            return cardMuralAPI.update(id, dataToSend);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['cardsMural-admin'] });
             queryClient.invalidateQueries({ queryKey: ['cardsMural'] });
             setEditingCard(null);
+            setApiError('');
         },
+        onError: (error) => {
+            console.error('Erro ao atualizar card:', error);
+            if (error.response?.status === 403) {
+                setApiError('Erro de permissão (403). Verifique se você está logado e tem permissões adequadas.');
+            } else {
+                setApiError(error.response?.data?.message || 'Erro ao atualizar card');
+            }
+        }
     });
 
     const deleteCardMutation = useMutation({
@@ -385,7 +460,16 @@ export default function Admin() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['cardsMural-admin'] });
             queryClient.invalidateQueries({ queryKey: ['cardsMural'] });
+            setApiError('');
         },
+        onError: (error) => {
+            console.error('Erro ao deletar card:', error);
+            if (error.response?.status === 403) {
+                setApiError('Erro de permissão (403). Verifique se você está logado e tem permissões adequadas.');
+            } else {
+                setApiError(error.response?.data?.message || 'Erro ao deletar card');
+            }
+        }
     });
 
     // ============================================
@@ -395,10 +479,12 @@ export default function Admin() {
         e.preventDefault();
         setLoginError("");
         setLoginLoading(true);
+        setApiError("");
         try {
             await usersAPI.login({ email: loginUser, password: loginPass });
             setIsAuthenticated(true);
         } catch (err) {
+            console.error('Erro no login:', err);
             setLoginError(err.response?.data?.message || "Usuário ou senha inválidos");
         } finally {
             setLoginLoading(false);
@@ -406,9 +492,14 @@ export default function Admin() {
     };
 
     const handleLogout = async () => {
-        await usersAPI.logout();
-        setIsAuthenticated(false);
-        navigate('/admin');
+        try {
+            await usersAPI.logout();
+        } catch (error) {
+            console.error('Erro no logout:', error);
+        } finally {
+            setIsAuthenticated(false);
+            navigate('/admin');
+        }
     };
 
     const tipoIcons = {
@@ -618,6 +709,30 @@ export default function Admin() {
                             Logado como: <span className="font-semibold text-[#00482B]">{loginUser}</span>
                         </p>
                     </motion.div>
+
+                    {/* Alerta de erro da API */}
+                    <AnimatePresence>
+                        {apiError && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3"
+                            >
+                                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="text-red-800 font-medium">Erro na operação</p>
+                                    <p className="text-red-600 text-sm mt-1">{apiError}</p>
+                                </div>
+                                <button
+                                    onClick={() => setApiError('')}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -1060,7 +1175,18 @@ export default function Admin() {
 
                                             <Separator className="bg-gray-200" />
 
-                                            <Button onClick={() => createCardMutation.mutate(newCard)}
+                                            <Button 
+                                                onClick={() => {
+                                                    const cardParaSalvar = {
+                                                        ...newCard,
+                                                        cor_destaque: newCard.cor_destaque || null,
+                                                        setor: newCard.setor || null,
+                                                        nome_funcionario: newCard.nome_funcionario || null,
+                                                        data_aniversario: newCard.data_aniversario || null,
+                                                        imagem_url: newCard.imagem_url || null
+                                                    };
+                                                    createCardMutation.mutate(cardParaSalvar);
+                                                }}
                                                 disabled={!newCard.titulo || createCardMutation.isPending}
                                                 className="w-full bg-gradient-to-r from-[#00482B] to-[#00703C] hover:from-[#00703C] hover:to-[#008C4A] text-white font-semibold h-12 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50">
                                                 {createCardMutation.isPending ? (
@@ -1175,7 +1301,18 @@ export default function Admin() {
                                                                         </div>
 
                                                                         <div className="flex gap-2 pt-2">
-                                                                            <Button onClick={() => updateCardMutation.mutate({ id: card.id, data: editingCard })}
+                                                                            <Button 
+                                                                                onClick={() => {
+                                                                                    const cardParaSalvar = {
+                                                                                        ...editingCard,
+                                                                                        cor_destaque: editingCard.cor_destaque || null,
+                                                                                        setor: editingCard.setor || null,
+                                                                                        nome_funcionario: editingCard.nome_funcionario || null,
+                                                                                        data_aniversario: editingCard.data_aniversario || null,
+                                                                                        imagem_url: editingCard.imagem_url || null
+                                                                                    };
+                                                                                    updateCardMutation.mutate({ id: card.id, data: cardParaSalvar });
+                                                                                }}
                                                                                 className="bg-[#00482B] hover:bg-[#00703C] text-white" size="sm">
                                                                                 <Save className="w-4 h-4 mr-1" />Salvar
                                                                             </Button>
