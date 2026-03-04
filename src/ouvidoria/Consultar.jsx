@@ -355,7 +355,7 @@ export default function ConsultarProtocolo() {
                               </p>
                             </div>
                             
-                              href={`${API_BASE}/manifestacoes/anexo/${getCampo(manifestacao, 'anexo_id', 'anexoId')}`}
+                              href={API_BASE + '/manifestacoes/anexo/' + getCampo(manifestacao, 'anexo_id', 'anexoId')}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-2 px-4 py-2 bg-[#00482B] text-white text-sm font-medium rounded-lg hover:bg-[#00703C] transition-colors flex-shrink-0"
