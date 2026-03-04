@@ -55,6 +55,7 @@ const STATUS_CONFIG = {
     icon: CheckCircle,
     bg: 'bg-green-50'
   },
+  // Mantido para compatibilidade com registros antigos
   ENCERRADA: { 
     label: 'Encerrada', 
     color: 'bg-gray-500/10 text-gray-700 border-gray-200', 
@@ -87,26 +88,12 @@ export default function ConsultarProtocolo() {
 
   function formatarData(dataString) {
     if (!dataString) return ''
-    return new Date(dataString).toLocaleDateString('pt-BR', { 
-      day: '2-digit', month: '2-digit', year: 'numeric', 
-      hour: '2-digit', minute: '2-digit' 
-    })
+    return new Date(dataString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   function formatarTipo(tipo) {
-    const tipos = { 
-      RECLAMACAO: 'Reclamação', 
-      DENUNCIA: 'Denúncia', 
-      SUGESTAO: 'Sugestão', 
-      ELOGIO: 'Elogio', 
-      SOLICITACAO: 'Solicitação' 
-    }
+    const tipos = { RECLAMACAO: 'Reclamação', DENUNCIA: 'Denúncia', SUGESTAO: 'Sugestão', ELOGIO: 'Elogio', SOLICITACAO: 'Solicitação' }
     return tipos[tipo?.toUpperCase()] || tipo || 'Não informado'
-  }
-
-  // helper para pegar o campo independente do formato (snake_case ou camelCase)
-  function getCampo(obj, snake, camel) {
-    return obj?.[snake] || obj?.[camel] || null
   }
 
   return (
@@ -236,8 +223,8 @@ export default function ConsultarProtocolo() {
                         <div className="space-y-4">
                           {[
                             { icon: Tag, label: 'Tipo', value: formatarTipo(manifestacao.tipo) },
-                            { icon: Building, label: 'Unidade', value: getCampo(manifestacao, 'unidade_nome', 'unidadenome') || 'Não informada' },
-                            { icon: FileText, label: 'Categoria', value: getCampo(manifestacao, 'categoria_nome', 'categoriaNome') || 'Não informada' },
+                            { icon: Building, label: 'Unidade', value: manifestacao.unidade_nome || 'Não informada' },
+                            { icon: FileText, label: 'Categoria', value: manifestacao.categoria_nome || 'Não informada' },
                           ].map(({ icon: Icon, label, value }) => (
                             <div key={label} className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all">
                               <div className="flex items-center gap-3 text-gray-700 mb-3">
@@ -256,7 +243,7 @@ export default function ConsultarProtocolo() {
                               <span className="text-sm font-semibold">Data de Criação</span>
                             </div>
                             <p className="font-medium text-gray-900 ml-9">
-                              {formatarData(getCampo(manifestacao, 'data_criacao', 'datacriacao'))}
+                              {formatarData(manifestacao.data_criacao || manifestacao.datacriacao)}
                             </p>
                           </div>
 
@@ -310,7 +297,7 @@ export default function ConsultarProtocolo() {
                         </div>
                       </div>
 
-                      {/* Resposta da Ouvidoria */}
+                      {/* ══ RESPOSTA DA OUVIDORIA ══ */}
                       {manifestacao.resposta && (
                         <motion.div
                           initial={{ opacity: 0, y: 12 }}
@@ -324,13 +311,14 @@ export default function ConsultarProtocolo() {
                             <Badge className="bg-green-100 text-green-700 border-green-300 text-xs ml-auto">Respondida</Badge>
                           </div>
                           <div className="bg-gradient-to-br from-green-50 to-white rounded-xl p-6 border border-green-200 shadow-sm relative overflow-hidden">
+                            {/* Detalhe decorativo */}
                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-green-300 rounded-l-xl" />
                             <div className="pl-4">
                               <p className="text-gray-800 whitespace-pre-line leading-relaxed">{manifestacao.resposta}</p>
-                              {getCampo(manifestacao, 'data_resposta', 'dataResposta') && (
+                              {manifestacao.dataResposta && (
                                 <p className="text-xs text-green-600 mt-4 flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
-                                  Respondido em {formatarData(getCampo(manifestacao, 'data_resposta', 'dataResposta'))}
+                                  Respondido em {formatarData(manifestacao.dataResposta)}
                                 </p>
                               )}
                             </div>
@@ -339,7 +327,7 @@ export default function ConsultarProtocolo() {
                       )}
 
                       {/* Anexo */}
-                      {manifestacao.possui_anexo || manifestacao.possuiAnexo ? (
+                      {manifestacao.possuiAnexo && (
                         <div className="mt-6">
                           <div className="flex items-center gap-3 text-gray-700 mb-4">
                             <div className="p-2 bg-[#00482B]/10 rounded-lg"><Paperclip className="w-5 h-5 text-[#00482B]" /></div>
@@ -350,21 +338,20 @@ export default function ConsultarProtocolo() {
                               <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 shadow-sm flex items-center justify-center flex-shrink-0">
                                 <FileText className="w-5 h-5 text-[#00482B]" />
                               </div>
-                              <p className="text-sm font-semibold text-gray-800 truncate">
-                                {getCampo(manifestacao, 'anexo_nome', 'anexoNome')}
-                              </p>
+                              <p className="text-sm font-semibold text-gray-800 truncate">{manifestacao.anexoNome}</p>
                             </div>
-                            
-                              href={API_BASE + '/manifestacoes/anexo/' + getCampo(manifestacao, 'anexo_id', 'anexoId')}
+                            <a
+                              href={`${API_BASE}/manifestacoes/anexo/${manifestacao.anexoId}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-2 px-4 py-2 bg-[#00482B] text-white text-sm font-medium rounded-lg hover:bg-[#00703C] transition-colors flex-shrink-0"
                             >
-                              <Download className="w-4 h-4" />Baixar
+                              <Download className="w-4 h-4" />
+                              Baixar
                             </a>
                           </div>
                         </div>
-                      ) : null}
+                      )}
 
                       {/* Nova Consulta */}
                       <div className="pt-6 flex justify-end">
